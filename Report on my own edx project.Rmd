@@ -2,7 +2,7 @@
 title: "Report on my own edx project"
 author: "FUNG CHE HEI"
 date: "8/19/2020"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +16,25 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r cars}
-summary(cars)
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+if(!require(readr)) install.packages("readr", repos = "http://cran.us.r-project.org")
+
+library(tidyverse)
+library(caret)
+library(data.table)
+library(readr)
+
+#Read csv data first, and then change them into dataframe
+
+covid_jpn_prefecture <- as.data.frame(read_csv("data/covid_jpn_prefecture.csv"))
+covid_jpn_metadata <- as.data.frame(read_csv("data/covid_jpn_metadata.csv"))
+covid_jpn_total <- as.data.frame(read_csv("data/covid_jpn_total.csv"))
+
+head(covid_jpn_metadata)
+head(covid_jpn_prefecture)
+head(covid_jpn_total)
 ```
 
 ## Including Plots
