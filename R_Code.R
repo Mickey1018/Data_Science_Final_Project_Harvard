@@ -8,7 +8,16 @@ library(caret)
 library(data.table)
 library(readr)
 
+#Read csv data first, and then change them into dataframe
 
-covid_jpn_prefecture <- read_csv("data/covid_jpn_prefecture.csv")
-covid_jpn_metadata <- read_csv("data/covid_jpn_metadata.csv")
-covid_jpn_total <- read_csv("data/covid_jpn_total.csv")
+covid_jpn_prefecture <- as.data.frame(read_csv("data/covid_jpn_prefecture.csv"))
+covid_jpn_metadata <- as.data.frame(read_csv("data/covid_jpn_metadata.csv"))
+covid_jpn_total <- as.data.frame(read_csv("data/covid_jpn_total.csv"))
+
+head(covid_jpn_metadata)
+head(covid_jpn_prefecture)
+head(covid_jpn_total)
+
+
+
+
