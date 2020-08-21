@@ -6,6 +6,7 @@ if(!require(readr)) install.packages("readr", repos = "http://cran.us.r-project.
 if(!require(dslabs)) install.packages("dslabs", repos = "http://cran.us.r-project.org")
 if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
 if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
+if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -15,6 +16,7 @@ library(readr)
 library(dslabs)
 library(caret)
 library(lubridate)
+library(corrplot)
 
 #Read csv data set
 #change data set into data frame
@@ -72,6 +74,7 @@ corrected_seismic %>%
   geom_bar(width = 0.1,fill="red",col="black") +
   xlab("a - lack of hazard, b - low hazard") +
   ggtitle("seismic distribution on negative class (non-hazardous state)") #b is half of the a
+
 
 
 ##Ratio between seismoacoustic (result of shift seismic hazard assessment) on positive and negative class 
@@ -215,7 +218,10 @@ corrected_seismic %>%
 
 
 
-
+##explore correlation between numeric variables
+NumericVariables<- corrected_seismic %>%
+  select(genergy,gpuls,gdenergy,gdpuls,energy,maxenergy)
+corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)
 
 
 
