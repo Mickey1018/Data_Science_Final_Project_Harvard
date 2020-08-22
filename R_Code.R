@@ -7,6 +7,7 @@ if(!require(dslabs)) install.packages("dslabs", repos = "http://cran.us.r-projec
 if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
 if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
 if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-project.org")
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -17,14 +18,44 @@ library(dslabs)
 library(caret)
 library(lubridate)
 library(corrplot)
+library(knitr)
 
 #Read csv data set
 #change data set into data frame
 seismic <- as.data.frame(read_csv("data/seismic_bumps.csv"))
 
+
 #get an overview on the data set
 summary(seismic) #no NAs are observed, nbumps6,7,89 not useful
 head(seismic)
+
+
+
+#Variable Analysis
+variable_summary<-seismic %>% summarise_all(funs("Total" = n(),
+                     "Filled" = sum(!is.na(.)),
+                     "Nulls" = sum(is.na(.)),
+                     "Cardinality" = length(unique(.)))) %>%
+                     melt() %>%
+                    separate(variable, into = c('variable', 'measure'), sep="_") %>%
+                    spread(measure, value)  %>%
+                    mutate(Uniqueness = format(round(Cardinality/Total,1), nsmall = 1))
+
+#Create table of variable_summary
+variable_summary[,c(1,2,3,4,5,6)]
+
+
+#Create data frame for summarizing variable types
+names<- variable_summary$variable[-8] #remove id
+data.frame(Variable = names, 
+           Type = c('binary','numeric','numeric','numeric','numeric','catagorical','numeric',
+                    'catagorical','catagorical','catagorical','catagorical','catagorical','catagorical',
+                    'catagorical','catagorical','catagorical','catagorical','catagorical','catagorical'))
+
+
+
+
+
 
 #test the correctness of the numbers of bumps recorded
 seismic %>% 
