@@ -47,23 +47,39 @@ variable_summary[,c(1,2,3,4,5,6)]
 
 #Create data frame for summarizing variable types
 names<- variable_summary$variable[-8] #remove id
-data.frame(Variable = names, 
-           Type = c('binary','numeric','numeric','numeric','numeric','catagorical','numeric',
-                    'catagorical','catagorical','catagorical','catagorical','catagorical','catagorical',
-                    'catagorical','catagorical','catagorical','catagorical','catagorical','catagorical'))
+data.frame(
+  Variable = names, 
+  Type = c('binary',
+           'numeric',
+           'numeric',
+           'numeric',
+           'numeric',
+           'catagorical',
+           'numeric',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical',
+           'catagorical')
+  )
 
 
 
-
-
-
-#test the correctness of the numbers of bumps recorded
+#test the correctness of the data set
 seismic %>% 
   mutate(total = nbumps2+nbumps3+nbumps4+nbumps5+nbumps6+nbumps7+nbumps89) %>%
   mutate(diff = total - nbumps) %>%
   filter(diff!=0) %>% 
   summarize(n=n()) %>%
   pull(n) #2 incorrect observations are found
+
 
 #extract the index of incorrect data set
 incorrect_index<- 
@@ -78,7 +94,8 @@ incorrect_index<-
 corrected_seismic<-
   seismic %>% 
   filter(id!=incorrect_index) %>%
-  select(-nbumps6,-nbumps7,-nbumps89)
+  select(-nbumps6,-nbumps7,-nbumps89,-id)
+
 
 #number of positive class
 sum(corrected_seismic$class==1)#169
