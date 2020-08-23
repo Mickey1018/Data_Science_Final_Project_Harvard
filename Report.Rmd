@@ -203,6 +203,9 @@ corrected_seismic<-
 
 ## 2.2 Data Exploration and Visualization
 
+### 2.2.1 Ratio between seismic (result of shift seismic hazard assessment) on positive and negative class 
+
+
 ```{r, echo=FALSE, figures-side, fig.show="hold", out.width="50%"}
 #extract the index of incorrect data set
 incorrect_index<- 
@@ -212,6 +215,8 @@ incorrect_index<-
   filter(diff!=0) %>% 
   pull(id)
 
+#filter out the incorrect observations
+#correct the data set
 corrected_seismic<-
   seismic %>% 
   filter(id!=incorrect_index) %>%
@@ -221,17 +226,211 @@ corrected_seismic %>%
   filter(class==1) %>%
   ggplot(aes(seismic)) +
   geom_bar(width = 0.1,fill="red",col="black") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
   xlab("a - lack of hazard, b - low hazard") +
-  ggtitle("seismic distribution on positive class (hazardous state)")
+  ggtitle("seismic distribution on hazardous state \n(class 1)")
 
 corrected_seismic %>%
   filter(class==0) %>%
   ggplot(aes(seismic)) +
   geom_bar(width = 0.1,fill="red",col="black") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
   xlab("a - lack of hazard, b - low hazard") +
-  ggtitle("seismic distribution on negative class (non-hazardous state)")
+  ggtitle("seismic distribution on non-hazardous state \n(class 0)")
 ```
 
+### 2.2.2 Ratio between seismoacoustic (result of shift seismic hazard assessment) on positive and negative class
+
+```{r, echo=FALSE, fig.show="hold", out.width="50%"}
+corrected_seismic %>%
+  filter(class==1) %>%
+  ggplot(aes(seismoacoustic)) +
+  geom_bar(width = 0.2,fill="red",col="black") +
+  xlab("a - lack of hazard, b - low hazard, c - high hazard") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  ggtitle("seismoacoustic distribution on hazardous state \n(class 1)")
+
+corrected_seismic %>%
+  filter(class==0) %>%
+  ggplot(aes(seismoacoustic)) +
+  geom_bar(width = 0.2,fill="red",col="black") +
+  xlab("a - lack of hazard, b - low hazard, c - high hazard") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  ggtitle("seismoacoustic distribution on non-hazardous state \n(class 0)")
+```
+
+### 2.2.3 Ratio between shift on positive and negative class
+
+```{r, echo=FALSE, fig.show="hold", out.width="50%"}
+corrected_seismic %>%
+  filter(class==1) %>%
+  ggplot(aes(shift)) +
+  geom_bar(width = 0.1,fill="red",col="black") +
+  xlab("type of a shift (W - coal-getting, N -preparation shift)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  ggtitle("shift type distribution on hazardous state \n(class 1)")
+
+corrected_seismic %>%
+  filter(class==0) %>%
+  ggplot(aes(shift)) +
+  geom_bar(width = 0.1,fill="red",col="black") +
+  xlab("type of a shift (W - coal-getting, N -preparation shift)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  ggtitle("shift type distribution on non-hazardous state \n(class 0)")
+```
+
+### 2.2.4 genergy on positive class and negative class
+
+```{r}
+corrected_seismic %>% 
+  ggplot(aes(genergy)) +
+  geom_boxplot(fill="white") +
+  scale_x_continuous(trans = "log10") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  facet_grid(class~.) +
+  ggtitle("genergy on hazardous state (class 1) and non-hazardous state (class 0)")
+```
+
+### 2.2.5 gdenergy on positive class and negative class
+
+```{r}
+corrected_seismic %>% 
+  ggplot(aes(gdenergy)) +
+  geom_boxplot(fill="white") +
+  scale_x_continuous(trans = "log10") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  facet_grid(class~.) +
+  ggtitle("gdenergy on hazardous state (class 1) and non-hazardous state (class 0)")
+```
+
+### 2.2.6 gpuls on positive class and negative class
+
+```{r}
+corrected_seismic %>% 
+  ggplot(aes(gpuls)) +
+  geom_boxplot(fill="white") +
+  scale_x_continuous(trans = "log10") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  facet_grid(class~.) +
+  ggtitle("gpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+```
+
+### 2.2.7 gdpuls on positive class and negative class
+
+```{r}
+corrected_seismic %>% 
+  ggplot(aes(gdpuls)) +
+  geom_boxplot(fill="white") +
+  scale_x_continuous(trans = "log10") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  facet_grid(class~.) +
+  ggtitle("gdpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+```
+
+### 2.2.8 Ratio between ghazard on positive class and negative class
+
+```{r, echo=FALSE, fig.show="hold", out.width="50%"}
+corrected_seismic %>%
+  filter(class==1) %>%
+  ggplot(aes(ghazard)) +
+  geom_bar(width = 0.1,fill="red",col="black") +
+  xlab("a - lack of hazard, b - low hazard") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  ggtitle("ghazard distribution on hazardous state (class 1)")
+  
+
+corrected_seismic %>%
+  filter(class==0) %>%
+  ggplot(aes(ghazard)) +
+  geom_bar(width = 0.2,fill="red",col="black") +
+  xlab("a - lack of hazard, b - low hazard, c - high hazard") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  ggtitle("ghazard distribution on non-hazardous state(class 0)")
+```
+
+### 2.2.9 Effects by number of bumps with diff. energy range
+
+```{r, include=FALSE}
+#In each class, calculate total numbers of bumps with diff. energy range 
+corrected_seismic %>%
+  select(class,nbumps,nbumps2,nbumps3,nbumps4,nbumps5) %>%
+  group_by(class) %>%
+  summarize(sum(nbumps),sum(nbumps2),sum(nbumps3),sum(nbumps4),sum(nbumps5))
+#create two data frames for each class   
+bumps_c0<- data.frame(bumps_sum = c(1856,848,847,150,11))
+bumps_c1<- data.frame(bumps_sum = c(362,168,168,25,1))
+```
+
+
+```{r, echo=FALSE, fig.show="hold", out.width="50%"}
+#plot the positive class and negative class result
+ggplot(bumps_c1, aes(x=row.names(bumps_c1), y=bumps_sum)) +
+  geom_col(fill="red",color="black", width = 0.3) +
+  xlab("summed bumps with diff. energy range") +
+  ylab("count") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  ggtitle("Proportion of bumps with diff. energy range \non hazardous state (class 1)")
+ggplot(bumps_c0, aes(x=row.names(bumps_c0), y=bumps_sum)) +
+  geom_col(fill="red",color="black", width = 0.3) +
+  xlab("summed bumps with diff. energy range") +
+  ylab("count") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  ggtitle("Proportion of bumps with diff. energy range \non non-hazardous state (class 0)")
+```
+
+### 2.2.10 energy on positive class and negative class
+
+```{r}
+corrected_seismic %>%
+  ggplot(aes(energy)) +
+  geom_boxplot() +
+  scale_x_continuous(trans = "log10") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  facet_grid(class~.) +
+  ggtitle("energy on hazardous state (class 1) and non-hazardous state (class 0))")
+```
+
+
+### 2.2.11 maxenergy on positive class and negative class
+
+```{r}
+corrected_seismic %>%
+  ggplot(aes(maxenergy)) +
+  geom_boxplot() +
+  scale_x_continuous(trans = "log10") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  facet_grid(class~.) +
+  ggtitle("maxenergy on hazardous state (class 1) and non-hazardous state (class 0))")
+```
+
+
+### 2.2.12 explore correlation between numeric variables
+
+
+```{r, include=FALSE}
+NumericVariables<- corrected_seismic %>%
+  select(genergy,gpuls,gdenergy,gdpuls,energy,maxenergy)
+```
+
+```{r, echo=FALSE}
+corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)
+```
 
 
 ## 2.3 Modeling Approach
