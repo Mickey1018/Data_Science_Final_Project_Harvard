@@ -183,7 +183,7 @@ corrected_seismic %>%
 
 
 
-##gplus on positive class and negative class
+##gpuls on positive class and negative class
 corrected_seismic %>% 
   ggplot(aes(gpuls)) +
   geom_boxplot(fill="white") +

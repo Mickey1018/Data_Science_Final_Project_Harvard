@@ -203,6 +203,34 @@ corrected_seismic<-
 
 ## 2.2 Data Exploration and Visualization
 
+```{r, echo=FALSE, figures-side, fig.show="hold", out.width="50%"}
+#extract the index of incorrect data set
+incorrect_index<- 
+  seismic %>% 
+  mutate(total = nbumps2+nbumps3+nbumps4+nbumps5+nbumps6+nbumps7+nbumps89) %>%
+  mutate(diff = total - nbumps) %>%
+  filter(diff!=0) %>% 
+  pull(id)
+
+corrected_seismic<-
+  seismic %>% 
+  filter(id!=incorrect_index) %>%
+  select(-nbumps6,-nbumps7,-nbumps89,-id)
+
+corrected_seismic %>%
+  filter(class==1) %>%
+  ggplot(aes(seismic)) +
+  geom_bar(width = 0.1,fill="red",col="black") +
+  xlab("a - lack of hazard, b - low hazard") +
+  ggtitle("seismic distribution on positive class (hazardous state)")
+
+corrected_seismic %>%
+  filter(class==0) %>%
+  ggplot(aes(seismic)) +
+  geom_bar(width = 0.1,fill="red",col="black") +
+  xlab("a - lack of hazard, b - low hazard") +
+  ggtitle("seismic distribution on negative class (non-hazardous state)")
+```
 
 
 
