@@ -333,28 +333,35 @@ corrected_seismic %>%
 
 ### 2.2.6 Number of pulses recorded in previous shift (gpuls) in mine with hazardous and non-hazardous state
 
+The below graph shows the distribution of number of seismic pulses recorded in previous shift on the two classes (i.e. mine with hazardous and non-hazardous state). It is observed that the more the seismic pulses recorded in the previous shift, the higher chance the high energy seismic bump occurs in the next shift.From this observation, 'gpuls' seems a good attribute for classifying whether the mine is in hazardous state or non-hazardous state.
+
 ```{r}
 corrected_seismic %>% 
-  ggplot(aes(gpuls)) +
-  geom_boxplot(fill="white") +
+  mutate(class = as.character(class)) %>%
+  ggplot(aes(gpuls,fill=class)) +
+  geom_density(alpha=0.4) +
   scale_x_continuous(trans = "log10") +
   xlab("Number of pulses in previous shift") +
   theme_bw() +
   theme(plot.title = element_text(size = 10, face = "bold")) +
-  facet_grid(class~.) +
   ggtitle("gpuls on hazardous state (class 1) and non-hazardous state (class 0)")
 ```
 
-### 2.2.7 gdpuls on positive class and negative class
+### 2.2.7 Deviation of number of pulses recorded in previous shift (gdpuls) in mine with hazardous and non-hazardous state
+
+Here we try to observe how deviation of number of seismic pulses recorded in the previous shift would affect the occurrence of high energy bumps in next shift. In the below graph, the distributions of deviation of number of pulses in the previous shift in both classes 
 
 ```{r}
 corrected_seismic %>% 
-  ggplot(aes(gdpuls)) +
-  geom_boxplot(fill="white") +
+  mutate(class = as.character(class)) %>%
+  mutate(gdpuls_absolute = ifelse(gdpuls<0,-gdpuls,gdpuls)) %>%
+  mutate(gdpuls_tran = ifelse(gdpuls_absolute==0,gdpuls_absolute+1,gdpuls_absolute)) %>%
+  ggplot(.,aes(x=gdpuls_tran,fill=class)) +
+  geom_density(alpha=0.4) +
   scale_x_continuous(trans = "log10") +
+  xlab("Deviation of number of pulses in previous shift") +
   theme_bw() +
-  theme(plot.title = element_text(size = 12, face = "bold")) +
-  facet_grid(class~.) +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
   ggtitle("gdpuls on hazardous state (class 1) and non-hazardous state (class 0)")
 ```
 

@@ -216,15 +216,42 @@ corrected_seismic %>%
   ggtitle("gpuls on hazardous state (class 1) and non-hazardous state (class 0)")
 
 
-
-##gdpuls on positive class and negative class
 corrected_seismic %>% 
-  ggplot(aes(gdpuls)) +
+  mutate(class = as.character(class)) %>%
+  ggplot(aes(gpuls,fill=class)) +
+  geom_density(alpha=0.4) +
+  scale_x_continuous(trans = "log10") +
+  xlab("Number of pulses in previous shift") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  ggtitle("gpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+
+
+
+### 2.2.7 Deviation of number of pulses recorded in previous shift (gdpuls) in mine with hazardous and non-hazardous state
+corrected_seismic %>% 
+  mutate(gdpuls_absolute = ifelse(gdpuls<0,-gdpuls,gdpuls)) %>%
+  mutate(gdpuls_tran = ifelse(gdpuls_absolute==0,gdpuls_absolute+1,gdpuls_absolute)) %>%
+  ggplot(aes(gdpuls_tran)) +
   geom_boxplot(fill="white") +
   scale_x_continuous(trans = "log10") +
+  xlab("Deviation of number of pulses in previous shift") +
   theme_bw() +
-  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
   facet_grid(class~.) +
+  ggtitle("gdpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+
+
+corrected_seismic %>% 
+  mutate(class = as.character(class)) %>%
+  mutate(gdpuls_absolute = ifelse(gdpuls<0,-gdpuls,gdpuls)) %>%
+  mutate(gdpuls_tran = ifelse(gdpuls_absolute==0,gdpuls_absolute+1,gdpuls_absolute)) %>%
+  ggplot(.,aes(x=gdpuls_tran,fill=class)) +
+  geom_density(alpha=0.4) +
+  scale_x_continuous(trans = "log10") +
+  xlab("Deviation of number of pulses in previous shift") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
   ggtitle("gdpuls on hazardous state (class 1) and non-hazardous state (class 0)")
 
 
