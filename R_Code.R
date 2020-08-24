@@ -107,8 +107,9 @@ sum(corrected_seismic$class==0)#2413
 
 
 
-#Date exploration
-##Ratio between seismic (result of shift seismic hazard assessment) on positive and negative class 
+## 2.2 Data Exploration and Visualization
+
+### 2.2.1 Distribution of seismic (result of shift seismic hazard assessment) on mine with hazardous and non-hazardous state
 corrected_seismic %>%
   filter(class==1) %>%
   ggplot(aes(seismic)) +
@@ -129,7 +130,7 @@ corrected_seismic %>%
 
 
 
-##Ratio between seismoacoustic (result of shift seismic hazard assessment) on positive and negative class 
+### 2.2.2 Distribution of seismoacoustic (result of shift seismic hazard assessment) on mine with hazardous and non-hazardous state 
 corrected_seismic %>%
   filter(class==1) %>%
   ggplot(aes(seismoacoustic)) +
@@ -150,7 +151,7 @@ corrected_seismic %>%
 
 
 
-##Ratio between shift on positive and negative class 
+### 2.2.3 Distribution of shift type on mine with hazardous and non-hazardous state
 corrected_seismic %>%
   filter(class==1) %>%
   ggplot(aes(shift)) +
@@ -173,38 +174,44 @@ corrected_seismic %>%
 
 
 
-##genergy on positive class and negative class
+### 2.2.4 Seismic energy recorded in previous shift (genergy) in mine with hazardous and non-hazardous state
 corrected_seismic %>% 
-  ggplot(aes(genergy)) +
+  mutate(genergy_tran = genergy+1) %>%
+  ggplot(aes(genergy_tran)) +
   geom_boxplot(fill="white") +
   scale_x_continuous(trans = "log10") +
+  xlab("log(seismic energy in previous shift) / J") +
   theme_bw() +
-  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
   facet_grid(class~.) +
-  ggtitle("genergy on hazardous state (class 1) and non-hazardous state (class 0)")
+  ggtitle("genergy in mine with hazardous state (class 1) and non-hazardous state (class 0)")
 
 
 
-##gdenergy on positive class and negative class
+### 2.2.5 Deviation of Seismic energy recorded in previous shift (gdenergy) in mine with hazardous and non-hazardous state
 corrected_seismic %>% 
-  ggplot(aes(gdenergy)) +
+  mutate(gdenergy_absolute = ifelse(gdenergy<0,-gdenergy,gdenergy)) %>%
+  mutate(gdenergy_tran = ifelse(gdenergy_absolute==0,gdenergy_absolute+1,gdenergy_absolute)) %>%
+  ggplot(aes(gdenergy_tran)) +
   geom_boxplot(fill="white") +
   scale_x_continuous(trans = "log10") +
+  xlab("log(deviation of seismic energy in previous shift) / J") +
   theme_bw() +
-  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
   facet_grid(class~.) +
-  ggtitle("gdenergy on hazardous state (class 1) and non-hazardous state (class 0)")
+  ggtitle("gdenergy in mine with hazardous state (class 1) and non-hazardous state (class 0)")
 
 
 
 
-##gpuls on positive class and negative class
+### 2.2.6 Number of pulses recorded in previous shift (gpuls) in mine with hazardous and non-hazardous state
 corrected_seismic %>% 
   ggplot(aes(gpuls)) +
   geom_boxplot(fill="white") +
   scale_x_continuous(trans = "log10") +
+  xlab("Number of pulses in previous shift") +
   theme_bw() +
-  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
   facet_grid(class~.) +
   ggtitle("gpuls on hazardous state (class 1) and non-hazardous state (class 0)")
 
