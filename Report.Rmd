@@ -451,7 +451,7 @@ ggplot(bumps_c0, aes(x=c('total no. of bumps',
 
 ### 2.2.10 Total energy of seismic bumps in previous shift on mine with hazardous and non-hazardous state
 
-The below graph presents the total energy of seismic bumps registered in previous shift.  
+The below graph presents the total energy of seismic bumps registered in previous shift in both classes. Although the mean values of total energy are close to each other, the mean in negative class is only caused and calculated by 30 percent of it's observations. At most time (about 70 percent of the observations), the total energy of seismic bumps recorded in previous shift is zero in non-hazardous mine. While in the mine with hazardous state, about 75 percent of time there is a seismic bump with high energy level (10^3 to 10^5 J) occur in the previous shift. It then comes to a very useful information for predicting the occurrence of high energy seismic bumps in next shift.
 
 ```{r, echo=FALSE}
 mu_energy <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(energy))
@@ -472,6 +472,8 @@ corrected_seismic %>%
 
 ### 2.2.11 Maximum energy of seismic bumps in previous shift on mine with hazardous and non-hazardous state
 
+A very similar result is obtained when we observe the relationship between the Maximum energy of seismic bumps recorded in previous shift and the occurrence of high energy seismic bumps in next shift. It may due to the reason that the Maximum seismic energy recorded in previous shift takes almost the while part of the total seismic energy recorded in previous shift (i.e. maxenergy / total energy approximately equal to 1).
+
 ```{r,echo=FALSE}
 mu_maxenergy <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(maxenergy))
 corrected_seismic %>%
@@ -488,9 +490,20 @@ corrected_seismic %>%
   ggtitle("Maximum energy of the seismic bumps in previous shift on mine with\nhazardous state (class 1) and non-hazardous state (class 0)")
 ```
 
+Here we can calculate the ratio of 'maximum energy' to 'total energy' and see how it matches our prediction. 
+
+```{r, echo=TRUE}
+corrected_seismic %>%
+  mutate(maxenergy=maxenergy+1) %>%
+  mutate(energy=energy+1) %>%
+  mutate(max_to_total = maxenergy/energy) %>%
+  summarize(mean(max_to_total))
+```
+
 
 ### 2.2.12 Correlation between numeric variables
 
+Up to now we have visualized how different attributes affect the state of mine (hazardous when it is likely that a high energy seismic bump would occur in the next shift; non-hazardous when it is likely that a high energy seismic bump would not occur in the next shift). However we haven't seen the correlation between attributes. Here a correlation matrix is generated to see how attributes are correlate to each other.
 
 ```{r, include=FALSE}
 NumericVariables<- corrected_seismic %>%
@@ -501,9 +514,18 @@ NumericVariables<- corrected_seismic %>%
 corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)
 ```
 
+From the graph above we can see that there are 3 pairs of attributes that are closely correlate to each other.
+
+```{r, echo=FALSE}
+kable(data.frame(pairs=c("energy~maxenergy","gdenergy~gdpuls","genergy~gpuls"),
+                 correlation = c(0.99,0.81,0.75)))
+```
+
+
 
 ## 2.3 Modeling Approach
 
+### 2.3.1 Zero-predicting Model
 
 ***
 # 3. Results and Discussion

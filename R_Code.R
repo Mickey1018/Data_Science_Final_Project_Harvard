@@ -368,10 +368,16 @@ corrected_seismic %>%
   ggtitle("Maximum energy of the seismic bumps in previous shift on mine with\nhazardous state (class 1) and non-hazardous state (class 0)")
 
 
+#Ratio of maximum energy to total energy
+corrected_seismic %>%
+  mutate(maxenergy=maxenergy+1) %>%
+  mutate(energy=energy+1) %>%
+  mutate(max_to_total = maxenergy/energy) %>%
+  summarize(mean(max_to_total))
 
 
 
-### 2.2.12 Correlation between numeric variables
+### 2.2.12 Correlation between attributes
 NumericVariables<- corrected_seismic %>%
   select(genergy,gpuls,gdenergy,gdpuls,energy,maxenergy)
 corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)
