@@ -393,17 +393,17 @@ predict_glm <- predict(model_glm, type = "response")
 class_glm <- ifelse(predict_glm >= mean(corrected_seismic$class), 1, 0)
 mean(class_glm == corrected_seismic$class)#0.735
 
-### 2.3.3 Model-Always Zero
+### 2.3.3 Model- Zero
 
 model_zero <- 0
 mean(model_zero == corrected_seismic$class)#0.935
 
-### 2.3.3 
+### 2.3.4 decision tree v.s. sampling ???
 
-
-
-
-
+library(DMwR)
+corrected_seismic$class <- as.factor(corrected_seismic$class)
+corrected_seismic$seismic <- as.factor(corrected_seismic$seismic)
+newData <- SMOTE(class ~ ., corrected_seismic, perc.under=170)
 
 
 

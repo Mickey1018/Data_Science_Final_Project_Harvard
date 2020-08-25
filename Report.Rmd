@@ -552,7 +552,7 @@ mean(model_zero == corrected_seismic$class)
 
 ### 2.3.4 A solution to imbalance number of class variables
 
-
+There are many ways to deal with class imbalance problem such as collecting more data, changing the performance metric, resampling data set, generating synthetic samples, using different algorithms and penalizing models [3]. In this report, resampling would be used 
 
 ***
 # 3. Results and Discussion
@@ -585,4 +585,4 @@ Zabrze-Bielszowice coal mine, Poland. Int. Journal of Rock Mechanics and Mining 
 * 2. Kabiesz, J.: Effect 
 of the form of data on the quality of mine tremors hazard forecasting using neural networks. 
 Geotechnical and Geological Engineering, 24(5), 2005, 1131-1147
-* 3. 
+* 3. <https://machinelearningmastery.com/tactics-to-combat-imbalanced-classes-in-your-machine-learning-dataset/>
