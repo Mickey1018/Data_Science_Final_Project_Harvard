@@ -9,6 +9,7 @@ if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-
 if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-project.org")
 if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
 if(!require(plyr)) install.packages("plyr", repos = "http://cran.us.r-project.org")
+if(!require(DMwR)) install.packages("DMwR", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -21,6 +22,7 @@ library(lubridate)
 library(corrplot)
 library(knitr)
 library(plyr)
+library(DMwR)
 
 #Read csv data set
 #change data set into data frame
@@ -386,24 +388,64 @@ corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)
 
 ## 2.3 Modeling Approach
 
-### 2.3.2 Model-Logistic Regression
-
+### 2.3.2 Model-Logistic Regression (Imbalance class)
 model_glm <- glm(class ~ ., data = corrected_seismic, family = "binomial")
 predict_glm <- predict(model_glm, type = "response")
 class_glm <- ifelse(predict_glm >= mean(corrected_seismic$class), 1, 0)
 mean(class_glm == corrected_seismic$class)#0.735
 
-### 2.3.3 Model- Zero
 
+
+### 2.3.3 Model- Zero (Imbalance class)
 model_zero <- 0
 mean(model_zero == corrected_seismic$class)#0.935
 
-### 2.3.4 decision tree v.s. sampling ???
 
-library(DMwR)
+
+### 2.3.4 Resampling 
 corrected_seismic$class <- as.factor(corrected_seismic$class)
 corrected_seismic$seismic <- as.factor(corrected_seismic$seismic)
-newData <- SMOTE(class ~ ., corrected_seismic, perc.under=170)
+corrected_seismic$seismoacoustic <- as.factor(corrected_seismic$seismoacoustic)
+corrected_seismic$shift <- as.factor(corrected_seismic$shift)
+corrected_seismic$ghazard <- as.factor(corrected_seismic$ghazard)
+
+re_seimic <- SMOTE(class ~ ., corrected_seismic, perc.over = 200, k = 5, perc.under=150)
+sum(re_seimic$class==1)#507
+sum(re_seimic$class==0)#507
+
+
+### 2.3.5 Model - Zero (Balance class)
+mean(model_zero == re_seimic$class)
+
+
+
+### 2.3.6 Model - Logistic Regression
+
+
+
+### 2.3.7 Model - Decision Tree
+
+
+
+### 2.3.7 Model - Random Forest
+library(randomForest)
+fit <- randomForest(class~., data = re_seimic) 
+plot(fit)
+
+re_seimic %>%
+  mutate(y_hat = predict(fit, newdata = re_seimic)) %>%
+  summarize(acc = mean(y_hat == class))
+confusionMatrix(predict(fit, newdata = re_seimic), re_seimic$class)
+
+
+rm(fit)
+
+
+
+
+
+
+
 
 
 
