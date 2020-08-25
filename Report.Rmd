@@ -51,7 +51,7 @@ Therefore a good seismic hazard assessment is important and required for mining 
 
 Our main aim is:
 
-* to forecast the high energy seismic bumps (higher than 10^4 J) in mine
+* To forecast whether the high energy seismic bumps (higher than 10^4 J) would occur in coal mine in next shift, in order to predict whether the coal mine is under hazardous state or non-hazardous state.
 
 With predicting the possibility of the occurrence of hazardous situation, appropriate risk assement and supervision service can be made. For example, reducing the risk of rockburst by the use of distressing shooting method and withdrawing workers from the threatened area.
 
@@ -525,7 +525,34 @@ kable(data.frame(pairs=c("energy~maxenergy","gdenergy~gdpuls","genergy~gpuls"),
 
 ## 2.3 Modeling Approach
 
-### 2.3.1 Zero-predicting Model
+### 2.3.1 Potential problem in data set
+
+As mentioned in section 1.3, imbalance of class variables is a great problem in the data set. Among `r nrow(seismic)` observations, only `r sum(seismic$class==1)` of them belongs to class 1. Therefore if every time we just keep guessing the zero (the negative class), the result would be quite accurate or even perform better than other machine learning methods. Section 2.3.2 and 2.3.3 will demonstrate that problem.
+
+### 2.3.2 Model - Logistic Regression
+
+Here we would try to use logistic regression for this classification problem. First a logistic regression model is trained with the whole data set. Then the model is used to predict the probability of positive class and negative class that an observation belongs to. After that, the predicted probability is compared with the actual probability to decide whether an observation should be classified as positive class or negative class. Finally by comparing the predicted class with actual class, accuracy of the model is calculated. We can obtain an accuracy of 0.735 for logistic regression model.
+
+```{r, echo=TRUE}
+model_glm <- glm(class ~ ., data = corrected_seismic, family = "binomial")
+predict_glm <- predict(model_glm, type = "response")
+class_glm <- ifelse(predict_glm >= mean(corrected_seismic$class), 1, 0)
+mean(class_glm == corrected_seismic$class)
+```
+
+
+### 2.3.3 Model - Zero
+
+Second we would try a simple method be just guessing output class as zero every time. The accuracy of 0.935 is obtained with this model.
+
+```{r, echo=TRUE}
+model_zero <- 0
+mean(model_zero == corrected_seismic$class)
+```
+
+### 2.3.4 A solution to imbalance number of class variables
+
+
 
 ***
 # 3. Results and Discussion

@@ -384,5 +384,31 @@ corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)
 
 
 
+## 2.3 Modeling Approach
+
+### 2.3.2 Model-Logistic Regression
+
+model_glm <- glm(class ~ ., data = corrected_seismic, family = "binomial")
+predict_glm <- predict(model_glm, type = "response")
+class_glm <- ifelse(predict_glm >= mean(corrected_seismic$class), 1, 0)
+mean(class_glm == corrected_seismic$class)#0.735
+
+### 2.3.3 Model-Always Zero
+
+model_zero <- 0
+mean(model_zero == corrected_seismic$class)#0.935
+
+### 2.3.3 
+
+
+
+
+
+
+
+
+
+
+
 
 
