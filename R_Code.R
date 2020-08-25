@@ -8,6 +8,7 @@ if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.
 if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
 if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-project.org")
 if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+if(!require(plyr)) install.packages("plyr", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -19,6 +20,7 @@ library(caret)
 library(lubridate)
 library(corrplot)
 library(knitr)
+library(plyr)
 
 #Read csv data set
 #change data set into data frame
@@ -77,7 +79,7 @@ seismic %>%
   mutate(total = nbumps2+nbumps3+nbumps4+nbumps5+nbumps6+nbumps7+nbumps89) %>%
   mutate(diff = total - nbumps) %>%
   filter(diff!=0) %>% 
-  summarize(n=n()) %>%
+  dplyr::summarize(n=n()) %>%
   pull(n) #2 incorrect observations are found
 
 
@@ -205,6 +207,7 @@ corrected_seismic %>%
 
 
 ### 2.2.6 Number of pulses recorded in previous shift (gpuls) in mine with hazardous and non-hazardous state
+#box plot
 corrected_seismic %>% 
   ggplot(aes(gpuls)) +
   geom_boxplot(fill="white") +
@@ -213,22 +216,26 @@ corrected_seismic %>%
   theme_bw() +
   theme(plot.title = element_text(size = 10, face = "bold")) +
   facet_grid(class~.) +
-  ggtitle("gpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+  ggtitle("gpuls in mine with hazardous state (class 1) and non-hazardous state (class 0)")
 
-
+#density plot
+mu_gpuls <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(gpuls))
 corrected_seismic %>% 
   mutate(class = as.character(class)) %>%
   ggplot(aes(gpuls,fill=class)) +
   geom_density(alpha=0.4) +
+  geom_vline(data=mu_gpuls, aes(xintercept=grp.mean, color=class),
+             linetype="dashed") +
   scale_x_continuous(trans = "log10") +
-  xlab("Number of pulses in previous shift") +
+  xlab("log(Number of pulses in previous shift)") +
   theme_bw() +
   theme(plot.title = element_text(size = 10, face = "bold")) +
-  ggtitle("gpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+  ggtitle("gpuls in mine with hazardous state (class 1) and non-hazardous state (class 0)")
 
 
 
 ### 2.2.7 Deviation of number of pulses recorded in previous shift (gdpuls) in mine with hazardous and non-hazardous state
+#box plot
 corrected_seismic %>% 
   mutate(gdpuls_absolute = ifelse(gdpuls<0,-gdpuls,gdpuls)) %>%
   mutate(gdpuls_tran = ifelse(gdpuls_absolute==0,gdpuls_absolute+1,gdpuls_absolute)) %>%
@@ -239,8 +246,13 @@ corrected_seismic %>%
   theme_bw() +
   theme(plot.title = element_text(size = 10, face = "bold")) +
   facet_grid(class~.) +
-  ggtitle("gdpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+  ggtitle("gdpuls in mine with hazardous state (class 1) and non-hazardous state (class 0)")
 
+#density plot
+mu_gdpuls <- 
+  ddply(corrected_seismic %>% 
+        mutate(gdpuls_absolute = ifelse(gdpuls<0,-gdpuls,gdpuls)),
+      "class", summarise, grp.mean=mean(gdpuls_absolute))
 
 corrected_seismic %>% 
   mutate(class = as.character(class)) %>%
@@ -248,15 +260,17 @@ corrected_seismic %>%
   mutate(gdpuls_tran = ifelse(gdpuls_absolute==0,gdpuls_absolute+1,gdpuls_absolute)) %>%
   ggplot(.,aes(x=gdpuls_tran,fill=class)) +
   geom_density(alpha=0.4) +
+  geom_vline(data=mu_gdpuls, aes(xintercept=grp.mean, color=class),
+             linetype="dashed") +  
   scale_x_continuous(trans = "log10") +
-  xlab("Deviation of number of pulses in previous shift") +
+  xlab("log(Deviation of number of pulses in previous shift)") +
   theme_bw() +
   theme(plot.title = element_text(size = 10, face = "bold")) +
-  ggtitle("gdpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+  ggtitle("gdpuls in mine with hazardous state (class 1) and non-hazardous state (class 0)")
 
 
 
-##Ratio between ghazard on positive class and negative class
+### 2.2.8 Distribution of ghazard (result of shift seismic hazard assessment) on mine with hazardous and non-hazardous state
 corrected_seismic %>%
   filter(class==1) %>%
   ggplot(aes(ghazard)) +
@@ -264,73 +278,100 @@ corrected_seismic %>%
   xlab("a - lack of hazard, b - low hazard") +
   theme_bw() +
   theme(plot.title = element_text(size = 15, face = "bold")) +
-  ggtitle("ghazard distribution on hazardous state (class 1)")
+  ggtitle("ghazard distribution on mine with hazardous state (class 1)")
   
 
 corrected_seismic %>%
   filter(class==0) %>%
   ggplot(aes(ghazard)) +
-  geom_bar(width = 0.2,fill="red",col="black") +
+  geom_bar(width = 0.1,fill="red",col="black") +
   xlab("a - lack of hazard, b - low hazard, c - high hazard") +
   theme_bw() +
   theme(plot.title = element_text(size = 15, face = "bold")) +
-  ggtitle("ghazard distribution on non-hazardous state(class 0)")
+  ggtitle("ghazard distribution on mine with non-hazardous state(class 0)")
   #seems the ratios are the same on both classes
 
 
 
-##effects by number of bumps with diff. energy range
-###In each class, calculate total numbers of bumps with diff. energy range 
+
+### 2.2.9 Number of seismic bumps with different energy levels in previous shift on mine with hazardous and non-hazardous state 
 corrected_seismic %>%
   select(class,nbumps,nbumps2,nbumps3,nbumps4,nbumps5) %>%
   group_by(class) %>%
   summarize(sum(nbumps),sum(nbumps2),sum(nbumps3),sum(nbumps4),sum(nbumps5))
+
 ###create two data frames for each class   
 bumps_c0<- data.frame(bumps_sum = c(1856,848,847,150,11))
 bumps_c1<- data.frame(bumps_sum = c(362,168,168,25,1))
+
 ###plot the positive class and negative class result
-ggplot(bumps_c1, aes(x=row.names(bumps_c1), y=bumps_sum)) +
-  geom_col(fill="red",color="black", width = 0.3) +
-  xlab("summed bumps with diff. energy range") +
+ggplot(bumps_c1, aes(x=c('total no. of bumps',
+                         'no. of bumps in \nenergy range [10^2, 10^3)',
+                         'no. of bumps in \nenergy range [10^3, 10^4)',
+                         'no. of bumps in \nenergy range [10^4, 10^5)',
+                         'no. of bumps in \nenergy range [10^5, 10^6)'),
+                     y=bumps_sum)) +
+  geom_col(fill="red",color="black", width = 0.2) +
+  xlab("") +
   ylab("count") +
   theme_bw() +
-  theme(plot.title = element_text(size = 15, face = "bold")) +
-  ggtitle("Proportion of bumps with diff. energy range on hazardous state \n(class 1)")
-ggplot(bumps_c0, aes(x=row.names(bumps_c0), y=bumps_sum)) +
-  geom_col(fill="red",color="black", width = 0.3) +
-  xlab("summed bumps with diff. energy range") +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle("Number of seismic bumps with different energy range on \nmine with hazardous state (class 1)")
+
+ggplot(bumps_c0, aes(x=c('total no. of bumps',
+                         'no. of bumps in \nenergy range [10^2, 10^3)',
+                         'no. of bumps in \nenergy range [10^3, 10^4)',
+                         'no. of bumps in \nenergy range [10^4, 10^5)',
+                         'no. of bumps in \nenergy range [10^5, 10^6)'), 
+                     y=bumps_sum)) +
+  geom_col(fill="red",color="black", width = 0.2) +
+  xlab("") +
   ylab("count") +
   theme_bw() +
-  theme(plot.title = element_text(size = 15, face = "bold")) +
-  ggtitle("Proportion of bumps with diff. energy range on non-hazardous state \n(class 0)")
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle("Number of seismic bumps with different energy range on \nmine with non-hazardous state (class 0)")
 
 
 
-##energy on positive class and negative class
+### 2.2.10 Total energy of seismic bumps in previous shift on mine with hazardous and non-hazardous state
+mu_energy <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(energy))
 corrected_seismic %>%
-  ggplot(aes(energy)) +
-  geom_boxplot() +
+  mutate(class = as.character(class)) %>%
+  mutate(energy_tran = energy+1) %>%
+  ggplot(aes(energy_tran,fill=class)) +
+  geom_density(alpha=0.4) +
+  geom_vline(data=mu_energy, aes(xintercept=grp.mean, color=class),
+             linetype="dashed") +
   scale_x_continuous(trans = "log10") +
+  xlab("log(Total energy of seismic bumps in previous shift) / J") +
   theme_bw() +
-  theme(plot.title = element_text(size = 15, face = "bold")) +
-  facet_grid(class~.) +
-  ggtitle("energy on hazardous state (class 1) and non-hazardous state (class 0))")
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  ggtitle("Total energy of seismic bumps in previous shift on mine with\nhazardous state (class 1) and non-hazardous state (class 0))")
 
 
 
-##maxenergy on positive class and negative class
+### 2.2.11 Maximum energy of seismic bumps in previous shift on mine with hazardous and non-hazardous state
+mu_maxenergy <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(maxenergy))
 corrected_seismic %>%
-  ggplot(aes(maxenergy)) +
-  geom_boxplot() +
+  mutate(class = as.character(class)) %>%
+  mutate(maxenergy_tran = maxenergy+1) %>%
+  ggplot(aes(maxenergy_tran,fill=class)) +
+  geom_density(alpha=0.4) +
+  geom_vline(data=mu_maxenergy, aes(xintercept=grp.mean, color=class),
+             linetype="dashed") +
   scale_x_continuous(trans = "log10") +
+  xlab("log(Maxium energy of the seismic bumps in previous shift) / J") +
   theme_bw() +
-  theme(plot.title = element_text(size = 15, face = "bold")) +
-  facet_grid(class~.) +
-  ggtitle("maxenergy on hazardous state (class 1) and non-hazardous state (class 0))")
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  ggtitle("Maximum energy of the seismic bumps in previous shift on mine with\nhazardous state (class 1) and non-hazardous state (class 0)")
 
 
 
-##explore correlation between numeric variables
+
+
+### 2.2.12 Correlation between numeric variables
 NumericVariables<- corrected_seismic %>%
   select(genergy,gpuls,gdenergy,gdpuls,energy,maxenergy)
 corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)

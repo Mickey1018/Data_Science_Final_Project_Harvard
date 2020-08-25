@@ -21,6 +21,7 @@ if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.
 if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
 if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-project.org")
 if(!require(knitr)) install.packages("knitt", repos = "http://cran.us.r-project.org")
+if(!require(plyr)) install.packages("plyr", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -32,6 +33,7 @@ library(caret)
 library(lubridate)
 library(corrplot)
 library(knitr)
+library(plyr)
 
 #Read csv data first, and then change them into data frame
 seismic <- as.data.frame(read_csv("data/seismic_bumps.csv"))
@@ -177,7 +179,7 @@ seismic %>%
   mutate(total = nbumps2+nbumps3+nbumps4+nbumps5+nbumps6+nbumps7+nbumps89) %>%
   mutate(diff = total - nbumps) %>%
   filter(diff!=0) %>% 
-  summarize(n=n()) %>%
+  dplyr::summarize(n=n()) %>%
   pull(n)
 ```
 
@@ -293,7 +295,7 @@ corrected_seismic %>%
 
 ### 2.2.4 Seismic energy recorded in previous shift (genergy) in mine with hazardous and non-hazardous state
 
-This presents the records of seismic energy in the previous shift in mine with hazardous and non-hazardous state. By observing the below graph, the quartiles of seismic energy are having a higher value in mine with hazardous state than mine with non-hazardous state. It shows that the magnitude of previous seismic energy gives a significant effect on energy of seismic bumps in the next shift. That is, the higher the previous seismic energy is, the higher the chance of high energy seismic bump happens in the next shift. 
+This presents the records of seismic energy registered by the most active geophone (GMax) in the previous shift in both classes (i.e. mine with hazardous and non-hazardous state). By observing the below graph, the quartiles of seismic energy are having a higher value in mine with hazardous state than mine with non-hazardous state. It shows that the magnitude of previous seismic energy gives a significant effect on energy of seismic bumps in the next shift. That is, the higher the previous seismic energy is, the higher the chance of high energy seismic bump happens in the next shift. 
 
 Another thing we observed from the findings is that the range is larger, and the quartile range is smaller in the negative class data set. The reason of this fluctuation may be due to the imbalance number of observations in positive class and negative class.
 
@@ -313,7 +315,7 @@ corrected_seismic %>%
 
 ### 2.2.5 Deviation of Seismic energy recorded in previous shift (gdenergy) in mine with hazardous and non-hazardous state
 
-The deviation of records of seismic energy in the previous shift in mine with hazardous and non-hazardous state is presented in below graph. It is observed that other than the upper range, the distribution of deviation of seismic energy in the previous shift is almost the same in both classes (i.e. mine with hazardous state and non-hazardous state). Therefore the information given by the deviation of seismic energy in the previous shift is not enough for the prediction of occurrence of high energy seismic bumps in the next shift.
+In this section, the deviation of records of seismic energy registered by the most active geophone (GMax) in previous shift in both classes (i.e. mine with hazardous and non-hazardous state) is presented in below graph. It is observed that other than the upper range, the distribution of deviation of seismic energy in the previous shift is almost the same in both classes (i.e. mine with hazardous state and non-hazardous state). Therefore the information given by the deviation of seismic energy in the previous shift may have a less effect on the prediction of occurrence of high energy seismic bumps in the next shift.
 
 The difference in range of data set may cause by the imbalance number of observations in positive class and negative class. 
 
@@ -336,36 +338,48 @@ corrected_seismic %>%
 The below graph shows the distribution of number of seismic pulses recorded in previous shift on the two classes (i.e. mine with hazardous and non-hazardous state). It is observed that the more the seismic pulses recorded in the previous shift, the higher chance the high energy seismic bump occurs in the next shift.From this observation, 'gpuls' seems a good attribute for classifying whether the mine is in hazardous state or non-hazardous state.
 
 ```{r}
+mu_gpuls <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(gpuls))
 corrected_seismic %>% 
   mutate(class = as.character(class)) %>%
   ggplot(aes(gpuls,fill=class)) +
   geom_density(alpha=0.4) +
+  geom_vline(data=mu_gpuls, aes(xintercept=grp.mean, color=class),
+             linetype="dashed") +
   scale_x_continuous(trans = "log10") +
-  xlab("Number of pulses in previous shift") +
+  xlab("log(Number of pulses in previous shift)") +
   theme_bw() +
   theme(plot.title = element_text(size = 10, face = "bold")) +
-  ggtitle("gpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+  ggtitle("gpuls in mine with hazardous state (class 1) and non-hazardous state (class 0)")
 ```
 
 ### 2.2.7 Deviation of number of pulses recorded in previous shift (gdpuls) in mine with hazardous and non-hazardous state
 
-Here we try to observe how deviation of number of seismic pulses recorded in the previous shift would affect the occurrence of high energy bumps in next shift. In the below graph, the distributions of deviation of number of pulses in the previous shift in both classes 
+Here we try to observe how deviation of number of seismic pulses recorded in the previous shift would affect the occurrence of high energy bumps in next shift. In the below graph, the distributions of deviation of number of pulses in the previous shift are seem to be similar in two classes. An increase or decrease in number of seismic pulses in the previous shift seems not providing enough information for predicting the occurrence of high energy seismic bump in the next shift.
 
 ```{r}
+mu_gdpuls <- 
+  ddply(corrected_seismic %>% 
+        mutate(gdpuls_absolute = ifelse(gdpuls<0,-gdpuls,gdpuls)),
+      "class", summarise, grp.mean=mean(gdpuls_absolute))
+
 corrected_seismic %>% 
   mutate(class = as.character(class)) %>%
   mutate(gdpuls_absolute = ifelse(gdpuls<0,-gdpuls,gdpuls)) %>%
   mutate(gdpuls_tran = ifelse(gdpuls_absolute==0,gdpuls_absolute+1,gdpuls_absolute)) %>%
   ggplot(.,aes(x=gdpuls_tran,fill=class)) +
   geom_density(alpha=0.4) +
+  geom_vline(data=mu_gdpuls, aes(xintercept=grp.mean, color=class),
+             linetype="dashed") +  
   scale_x_continuous(trans = "log10") +
-  xlab("Deviation of number of pulses in previous shift") +
+  xlab("log(Deviation of number of pulses in previous shift)") +
   theme_bw() +
   theme(plot.title = element_text(size = 10, face = "bold")) +
-  ggtitle("gdpuls on hazardous state (class 1) and non-hazardous state (class 0)")
+  ggtitle("gdpuls in mine with hazardous state (class 1) and non-hazardous state (class 0)")
 ```
 
-### 2.2.8 Ratio between ghazard on positive class and negative class
+### 2.2.8 Distribution of ghazard (result of shift seismic hazard assessment) on mine with hazardous and non-hazardous state
+
+Similar to section 2.2.2, in each of the class (i.e. mine with hazardous and non-hazardous state), distribution of results of hazard assessment is summarized in the below graphs. With keeping the use of seismoacoustic method, only the observations coming from the most active geophone (GMax) are registered. The result is a bit unexpected because in negative class (mine with non-hazardous state), some hazard assessment with result c (high hazard) is recorded while there is no such assessment result recorded in positive class (mine with hazard state). This may due to again the imbalance number of opbservations in positive class and negative class. 
 
 ```{r, echo=FALSE, fig.show="hold", out.width="50%"}
 corrected_seismic %>%
@@ -375,20 +389,22 @@ corrected_seismic %>%
   xlab("a - lack of hazard, b - low hazard") +
   theme_bw() +
   theme(plot.title = element_text(size = 15, face = "bold")) +
-  ggtitle("ghazard distribution on hazardous state (class 1)")
+  ggtitle("ghazard distribution on mine with hazardous state (class 1)")
   
 
 corrected_seismic %>%
   filter(class==0) %>%
   ggplot(aes(ghazard)) +
-  geom_bar(width = 0.2,fill="red",col="black") +
+  geom_bar(width = 0.1,fill="red",col="black") +
   xlab("a - lack of hazard, b - low hazard, c - high hazard") +
   theme_bw() +
   theme(plot.title = element_text(size = 15, face = "bold")) +
-  ggtitle("ghazard distribution on non-hazardous state(class 0)")
+  ggtitle("ghazard distribution on mine with non-hazardous state (class 0)")
 ```
 
-### 2.2.9 Effects by number of bumps with diff. energy range
+### 2.2.9 Number of seismic bumps with different energy levels in previous shift on mine with hazardous and non-hazardous state
+
+From the below graphs, although the total numbers of seismic bumps recorded in the previous shift are different in two classes, it is interesting to observed that the distributions of seismic bumps in different energy ranges are almost the same. This result gives us a valuable information that the distribution of seismic bumps with different energy ranges in previous shift may has no main effect on causing a high energy seismic bump in the next shift.
 
 ```{r, include=FALSE}
 #In each class, calculate total numbers of bumps with diff. energy range 
@@ -403,52 +419,77 @@ bumps_c1<- data.frame(bumps_sum = c(362,168,168,25,1))
 
 
 ```{r, echo=FALSE, fig.show="hold", out.width="50%"}
-#plot the positive class and negative class result
-ggplot(bumps_c1, aes(x=row.names(bumps_c1), y=bumps_sum)) +
-  geom_col(fill="red",color="black", width = 0.3) +
-  xlab("summed bumps with diff. energy range") +
+###plot the positive class and negative class result
+ggplot(bumps_c1, aes(x=c('total no. of bumps',
+                         'no. of bumps in \nenergy range [10^2, 10^3)',
+                         'no. of bumps in \nenergy range [10^3, 10^4)',
+                         'no. of bumps in \nenergy range [10^4, 10^5)',
+                         'no. of bumps in \nenergy range [10^5, 10^6)'),
+                     y=bumps_sum)) +
+  geom_col(fill="red",color="black", width = 0.2) +
+  xlab("") +
   ylab("count") +
   theme_bw() +
-  theme(plot.title = element_text(size = 15, face = "bold")) +
-  ggtitle("Proportion of bumps with diff. energy range \non hazardous state (class 1)")
-ggplot(bumps_c0, aes(x=row.names(bumps_c0), y=bumps_sum)) +
-  geom_col(fill="red",color="black", width = 0.3) +
-  xlab("summed bumps with diff. energy range") +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle("Number of seismic bumps with different energy range on \nmine with hazardous state (class 1)")
+
+ggplot(bumps_c0, aes(x=c('total no. of bumps',
+                     'no. of bumps in \nenergy range [10^2, 10^3)',
+                     'no. of bumps in \nenergy range [10^3, 10^4)',
+                     'no. of bumps in \nenergy range [10^4, 10^5)',
+                     'no. of bumps in \nenergy range [10^5, 10^6)'), 
+                     y=bumps_sum)) +
+  geom_col(fill="red",color="black", width = 0.2) +
+  xlab("") +
   ylab("count") +
   theme_bw() +
-  theme(plot.title = element_text(size = 15, face = "bold")) +
-  ggtitle("Proportion of bumps with diff. energy range \non non-hazardous state (class 0)")
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle("Number of seismic bumps with different energy range on \nmine with non-hazardous state (class 0)")
 ```
 
-### 2.2.10 energy on positive class and negative class
+### 2.2.10 Total energy of seismic bumps in previous shift on mine with hazardous and non-hazardous state
 
-```{r}
+The below graph presents the total energy of seismic bumps registered in previous shift.  
+
+```{r, echo=FALSE}
+mu_energy <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(energy))
 corrected_seismic %>%
-  ggplot(aes(energy)) +
-  geom_boxplot() +
+  mutate(class = as.character(class)) %>%
+  mutate(energy_tran = energy+1) %>%
+  ggplot(aes(energy_tran,fill=class)) +
+  geom_density(alpha=0.4) +
+  geom_vline(data=mu_energy, aes(xintercept=grp.mean, color=class),
+             linetype="dashed") +
   scale_x_continuous(trans = "log10") +
+  xlab("log(Total energy of seismic bumps in previous shift) / J") +
   theme_bw() +
-  theme(plot.title = element_text(size = 15, face = "bold")) +
-  facet_grid(class~.) +
-  ggtitle("energy on hazardous state (class 1) and non-hazardous state (class 0))")
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  ggtitle("Total energy of seismic bumps in previous shift on mine with\nhazardous state (class 1) and non-hazardous state (class 0))")
 ```
 
 
-### 2.2.11 maxenergy on positive class and negative class
+### 2.2.11 Maximum energy of seismic bumps in previous shift on mine with hazardous and non-hazardous state
 
-```{r}
+```{r,echo=FALSE}
+mu_maxenergy <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(maxenergy))
 corrected_seismic %>%
-  ggplot(aes(maxenergy)) +
-  geom_boxplot() +
+  mutate(class = as.character(class)) %>%
+  mutate(maxenergy_tran = maxenergy+1) %>%
+  ggplot(aes(maxenergy_tran,fill=class)) +
+  geom_density(alpha=0.4) +
+  geom_vline(data=mu_maxenergy, aes(xintercept=grp.mean, color=class),
+             linetype="dashed") +
   scale_x_continuous(trans = "log10") +
+  xlab("log(Maxium energy of the seismic bumps in previous shift) / J") +
   theme_bw() +
-  theme(plot.title = element_text(size = 15, face = "bold")) +
-  facet_grid(class~.) +
-  ggtitle("maxenergy on hazardous state (class 1) and non-hazardous state (class 0))")
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  ggtitle("Maximum energy of the seismic bumps in previous shift on mine with\nhazardous state (class 1) and non-hazardous state (class 0)")
 ```
 
 
-### 2.2.12 explore correlation between numeric variables
+### 2.2.12 Correlation between numeric variables
 
 
 ```{r, include=FALSE}
