@@ -589,8 +589,29 @@ sum(re_seismic$class==0)
 After resampling our data set with same number of positive and negative class, an accuracy of 0.5 would be resulted by using the model that always predict zero.
 
 ```{r, echo=TRUE}
-mean(model_zero == re_seimic$class)
+mean(model_zero == re_seismic$class)
 ```
+
+### 2.3.6 Data Partition 
+
+In order to evaluate our model performance, it is required to split our data set into training set and test set. A partition of 80 percent of training data to 20 percent of test data would be chosen.
+
+```{r, echo=TRUE}
+y <- re_seismic$class
+set.seed(1)
+test_index <- createDataPartition(y, times = 1, p = 0.2, list = FALSE)
+re_seismic_train <- re_seismic %>% slice(-test_index)
+re_seismic_test <- re_seismic %>% slice(test_index)
+```
+
+We have now `r nrow(re_seismic_train)` training data and `r nrow(re_seismic_test)` test data. In the following sections, we would try different training methods and see which perform the best.
+
+During the training process, Repeated k-fold Cross Validation will be used. This is the repeating process of splitting the data into k-folds, and the final model accuracy is calculated as the mean from the numbers of repeats. For the following traiing, 10-fold cross validation with 3 repeats will be used for our data set.
+
+### 2.3.7 Model - knn
+
+### 2.3.8 Model - 
+
 
 
 

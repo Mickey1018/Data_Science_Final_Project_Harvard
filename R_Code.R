@@ -423,30 +423,65 @@ mean(model_zero == re_seismic$class)
 
 
 
-
 ### 2.3.6 Creating Data Partition
 y <- re_seismic$class
 set.seed(1)
-test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+test_index <- createDataPartition(y, times = 1, p = 0.2, list = FALSE)
 re_seismic_train <- re_seismic %>% slice(-test_index)
 re_seismic_test <- re_seismic %>% slice(test_index)
 
 
+
+### 2.3.7 Model - knn
+set.seed(1)
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_knn <- train(class~., 
+                 data = re_seismic_train, 
+                 trControl = train_control,
+                 method = "knn",
+                 tuneGrid = data.frame(k = seq(5, 100, 20))) 
+fit_knn$bestTune
+plot(fit_knn)
+predict_knn <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_knn, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+
+cm_knn <- confusionMatrix(predict_knn, re_seismic_test$class)
+cm_knn$overall["Accuracy"] #0.6617647
+
+
+
+
+
+
 ### 2.3.7 Model - Logistic Regression
 set.seed(1)
-fit_glm<- train(class ~ ., method = "glm", data = re_seismic_train, family = "binomial")
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_glm<- train(class ~ ., 
+                method = "glm", 
+                data = re_seismic_train,
+                trControl = train_control,
+                family = "binomial")
 predict_glm_2 <- 
   re_seismic_test %>%
   mutate(y_hat = predict(fit_glm, newdata = re_seismic_test)) %>%
   pull(y_hat) %>%
   factor(levels = levels(re_seismic_test$class))
 
-cm_glm_2 <- confusionMatrix(predict_glm_2, re_seismic_test$class) #0.7028
+cm_glm_2 <- confusionMatrix(predict_glm_2, re_seismic_test$class)
+cm_glm_2$overall["Accuracy"] #0.7027559
+
 
 
 ### 2.3.8 Model - Decision Tree
 set.seed(1)
-fit_rpart <- train(class~., data = re_seismic_train, method = "rpart") 
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_rpart <- train(class~., 
+                   data = re_seismic_train, 
+                   trControl = train_control,
+                   method = "rpart") 
 #plot(fit_rpart)
 predict_rpart <- 
   re_seismic_test %>%
@@ -454,20 +489,119 @@ predict_rpart <-
   pull(y_hat) %>%
   factor(levels = levels(re_seismic_test$class))
 
-cm_rpart <- confusionMatrix(predict_rpart, re_seismic_test$class) #0.7579
+cm_rpart <- confusionMatrix(predict_rpart, re_seismic_test$class)
+cm_rpart$overall["Accuracy"] #0.757874
 
 
-### 2.3.9 Model - Random Forest
+
+### 2.3.9 Model - Random Forest with 100 trees
 set.seed(1)
-fit_rf <- randomForest(class~., data = re_seismic_train) 
-#plot(fit_rf)
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_rf <- train(class~., 
+                data = re_seismic_train, 
+                method = "rf",
+                tuneGrid = data.frame(mtry = seq(1:7)),
+                trControl = train_control,
+                ntree = 100)  
+
+fit_rf$bestTune #4
+
+ggplot(fit_rf)
+
 predict_rf <- 
   re_seismic_test %>%
   mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
   pull(y_hat) %>%
   factor(levels = levels(re_seismic_test$class))
 
-cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class) #0.8209
+cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class)
+cm_rf$overall["Accuracy"] #0.8228346
+
+
+
+### 2.3.10 Model - Random Forest with 1000 trees
+set.seed(1)
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_rf <- train(class~., 
+                data = re_seismic_train, 
+                method = "rf",
+                tuneGrid = data.frame(mtry = seq(1:7)),
+                trControl = train_control,
+                ntree = 1000)  
+
+fit_rf$bestTune #4
+
+ggplot(fit_rf)
+
+predict_rf <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+
+cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class)
+cm_rf$overall["Accuracy"] #0.8129921
+
+
+
+
+
+
+
+### 2.3.12 Model - svm
+set.seed(1)
+# Set up Repeated k-fold Cross Validation
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_svm <- train(class ~., 
+                 data = re_seismic_train, 
+                 method = "svmLinear", 
+                 trControl = train_control,  
+                 preProcess = c("center","scale"))
+#plot(fit_svm)
+predict_svm <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_svm, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+
+cm_svm <- confusionMatrix(predict_svm, re_seismic_test$class)
+cm_svm$overall["Accuracy"] #0.6791339
+
+
+
+
+### 2.3.12 Model - ada boost
+set.seed(1)
+# Set up Repeated k-fold Cross Validation
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_adaboost <- train(class ~., 
+                 data = re_seismic_train, 
+                 method = "adaboost", 
+                 trControl = train_control,  
+                 preProcess = c("center","scale"))
+#plot(fit_adaboost)
+predict_adaboost <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_adaboost, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+
+cm_adaboost <- confusionMatrix(predict_adaboost, re_seismic_test$class)
+cm_adaboost$overall["Accuracy"] #0.7559055
+
+
+
+
+
+
+
+
+
+
+#importance
+imp<- varImp(fit_rf)
+tibble(term = rownames(imp), 
+       importance = imp$Overall)
 
 
 
@@ -484,21 +618,6 @@ cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class) #0.8209
 
 
 
-
-
-###Confusion Matrix###
-cm_Sex<-confusionMatrix(data = guess_by_sex, reference = test_set$Survived)
-cm_Pclass<- confusionMatrix(data = guess_by_Pclass, reference = test_set$Survived)
-cm_Sex_Pclass<- confusionMatrix(data = guess_by_Sex_Pclass, reference = test_set$Survived)
-
-cm_Sex$byClass[c("Sensitivity","Specificity", "Prevalence", "Balanced Accuracy")]
-cm_Pclass$byClass[c("Sensitivity","Specificity", "Prevalence", "Balanced Accuracy")]
-cm_Sex_Pclass$byClass[c("Sensitivity","Specificity", "Prevalence", "Balanced Accuracy")]
-
-###F1 Score###
-F1_Sex<-F_meas(data = guess_by_sex, reference = test_set$Survived)
-F1_Pclass<- F_meas(data = guess_by_Pclass, reference = test_set$Survived)
-F1_Sex_Pclass<- F_meas(data = predict(fit_rf, newdata = re_seismic_test), reference = re_seismic_test$Sclass)
 
 
 
