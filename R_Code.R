@@ -10,6 +10,8 @@ if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-pr
 if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
 if(!require(plyr)) install.packages("plyr", repos = "http://cran.us.r-project.org")
 if(!require(DMwR)) install.packages("DMwR", repos = "http://cran.us.r-project.org")
+if(!require(randomForest)) install.packages("randomForest", repos = "http://cran.us.r-project.org")
+if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -23,6 +25,8 @@ library(corrplot)
 library(knitr)
 library(plyr)
 library(DMwR)
+library(randomForest)
+library(rpart)
 
 #Read csv data set
 #change data set into data frame
@@ -409,46 +413,92 @@ corrected_seismic$seismoacoustic <- as.factor(corrected_seismic$seismoacoustic)
 corrected_seismic$shift <- as.factor(corrected_seismic$shift)
 corrected_seismic$ghazard <- as.factor(corrected_seismic$ghazard)
 
-re_seimic <- SMOTE(class ~ ., corrected_seismic, perc.over = 200, k = 5, perc.under=150)
-sum(re_seimic$class==1)#507
-sum(re_seimic$class==0)#507
+re_seismic <- SMOTE(class ~ ., corrected_seismic, perc.over = 200, k = 5, perc.under=150)
+sum(re_seismic$class==1)#507
+sum(re_seismic$class==0)#507
 
 
 ### 2.3.5 Model - Zero (Balance class)
-mean(model_zero == re_seimic$class)
-
-
-
-### 2.3.6 Model - Logistic Regression
-
-
-
-### 2.3.7 Model - Decision Tree
-
-
-
-### 2.3.7 Model - Random Forest
-library(randomForest)
-fit <- randomForest(class~., data = re_seimic) 
-plot(fit)
-
-re_seimic %>%
-  mutate(y_hat = predict(fit, newdata = re_seimic)) %>%
-  summarize(acc = mean(y_hat == class))
-confusionMatrix(predict(fit, newdata = re_seimic), re_seimic$class)
-
-
-rm(fit)
+mean(model_zero == re_seismic$class)
 
 
 
 
+### 2.3.6 Creating Data Partition
+y <- re_seismic$class
+set.seed(1)
+test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+re_seismic_train <- re_seismic %>% slice(-test_index)
+re_seismic_test <- re_seismic %>% slice(test_index)
+
+
+### 2.3.7 Model - Logistic Regression
+set.seed(1)
+fit_glm<- train(class ~ ., method = "glm", data = re_seismic_train, family = "binomial")
+predict_glm_2 <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_glm, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+
+cm_glm_2 <- confusionMatrix(predict_glm_2, re_seismic_test$class) #0.7028
+
+
+### 2.3.8 Model - Decision Tree
+set.seed(1)
+fit_rpart <- train(class~., data = re_seismic_train, method = "rpart") 
+#plot(fit_rpart)
+predict_rpart <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_rpart, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+
+cm_rpart <- confusionMatrix(predict_rpart, re_seismic_test$class) #0.7579
+
+
+### 2.3.9 Model - Random Forest
+set.seed(1)
+fit_rf <- randomForest(class~., data = re_seismic_train) 
+#plot(fit_rf)
+predict_rf <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+
+cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class) #0.8209
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+###Confusion Matrix###
+cm_Sex<-confusionMatrix(data = guess_by_sex, reference = test_set$Survived)
+cm_Pclass<- confusionMatrix(data = guess_by_Pclass, reference = test_set$Survived)
+cm_Sex_Pclass<- confusionMatrix(data = guess_by_Sex_Pclass, reference = test_set$Survived)
+
+cm_Sex$byClass[c("Sensitivity","Specificity", "Prevalence", "Balanced Accuracy")]
+cm_Pclass$byClass[c("Sensitivity","Specificity", "Prevalence", "Balanced Accuracy")]
+cm_Sex_Pclass$byClass[c("Sensitivity","Specificity", "Prevalence", "Balanced Accuracy")]
+
+###F1 Score###
+F1_Sex<-F_meas(data = guess_by_sex, reference = test_set$Survived)
+F1_Pclass<- F_meas(data = guess_by_Pclass, reference = test_set$Survived)
+F1_Sex_Pclass<- F_meas(data = predict(fit_rf, newdata = re_seismic_test), reference = re_seismic_test$Sclass)
 
 
 

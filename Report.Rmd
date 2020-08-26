@@ -23,6 +23,8 @@ if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-pr
 if(!require(knitr)) install.packages("knitt", repos = "http://cran.us.r-project.org")
 if(!require(plyr)) install.packages("plyr", repos = "http://cran.us.r-project.org")
 if(!require(DMwR)) install.packages("DMwR", repos = "http://cran.us.r-project.org")
+if(!require(randomForest)) install.packages("randomForest", repos = "http://cran.us.r-project.org")
+if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -36,6 +38,8 @@ library(corrplot)
 library(knitr)
 library(plyr)
 library(DMwR)
+library(randomForest)
+library(rpart)
 
 #Read csv data first, and then change them into data frame
 seismic <- as.data.frame(read_csv("data/seismic_bumps.csv"))
@@ -567,17 +571,17 @@ corrected_seismic$ghazard <- as.factor(corrected_seismic$ghazard)
 SMOTE (Synthetic minority over-sampling technique) Algorithm from DMwR package is used for resampling.
 
 ```{r, echo=TRUE}
-re_seimic <- SMOTE(class ~ ., corrected_seismic, perc.over = 200, k = 5, perc.under=150)
+re_seismic <- SMOTE(class ~ ., corrected_seismic, perc.over = 200, k = 5, perc.under=150)
 ```
 
-After resampling we now have `r sum(re_seimic$class==1)` positive class and `r sum(re_seimic$class==0)` negative class. The data set now becomes balance.
+After resampling we now have `r sum(re_seismic$class==1)` positive class and `r sum(re_seismic$class==0)` negative class. The data set now becomes balance.
 
 ```{r, echo=TRUE}
-sum(re_seimic$class==1)
+sum(re_seismic$class==1)
 ```
 
 ```{r, echo=TRUE}
-sum(re_seimic$class==0)
+sum(re_seismic$class==0)
 ```
 
 ### 2.3.5 Model - Zero (Balance class)
