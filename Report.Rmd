@@ -721,25 +721,33 @@ The accuracy of decision tree model is `r cm_rpart$overall["Accuracy"]`.
 
 The final machine training method used for training is Random Forest. The mtry parameter, which is the number of variables available for splitting at each tree node, from range 1 ro 7 is used in repeated cross-validation for fine tuning the best model. 
 
-Also, the number of trees in forest would be set differently (100, 250 and 500) to  examine the effect on accuracy in test set.
+Also, the number of trees in forest would be set differently (100, 250 and 500) to  examine the effect on accuracy in test set. 
 
 ```{r, echo = TRUE}
 set.seed(1)
 train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
-fit_rf <- 
+cm_rf <- 
   sapply( c(100,250,500), function(x) {
-    train(class~., 
-    data = re_seismic_train, 
-    method = "rf",
-    tuneGrid = data.frame(mtry = seq(1:7)), 
-    trControl = train_control,
-    ntree = x)
-}
-)
+    
+    fit_rf <- 
+      train(class~., 
+      data = re_seismic_train, 
+      method = "rf",
+      tuneGrid = data.frame(mtry = seq(1:7)), 
+      trControl = train_control,
+      ntree = x)
+    
+    predict_rf <- 
+      re_seismic_test %>%
+      mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
+      pull(y_hat) %>%
+      factor(levels = levels(re_seismic_test$class))
+    
+    confusionMatrix(predict_rf, re_seismic_test$class)
+    
+  }
+  )
 ```
-
-
-
 
 
 ***

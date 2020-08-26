@@ -499,66 +499,38 @@ cm_rpart$overall["Accuracy"]
 
 
 
-### 2.3.9 Model - Random Forest with 100 trees
+### 2.3.9 Model - Random Forest
 set.seed(1)
 train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
-fit_rf <- train(class~., 
-                data = re_seismic_train, 
-                method = "rf",
-                tuneGrid = data.frame(mtry = seq(1:7)), 
-                trControl = train_control,
-                ntree = 100)  
-fit_rf$bestTune #4
-ggplot(fit_rf)
-predict_rf <- 
-  re_seismic_test %>%
-  mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
-  pull(y_hat) %>%
-  factor(levels = levels(re_seismic_test$class))
-
-cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class)
-cm_rf$overall["Accuracy"] #0.8228346
-
-
-
-set.seed(1)
-train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
-fit_rf <- 
+cm_rf <- 
   sapply( c(100,250,500), function(x) {
-    train(class~., 
-          data = re_seismic_train, 
-          method = "rf",
-          tuneGrid = data.frame(mtry = seq(1:7)), 
-          trControl = train_control,
-          ntree = x)
+    
+    fit_rf <- 
+      train(class~., 
+      data = re_seismic_train, 
+      method = "rf",
+      tuneGrid = data.frame(mtry = seq(1:7)), 
+      trControl = train_control,
+      ntree = x)
+    
+    predict_rf <- 
+      re_seismic_test %>%
+      mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
+      pull(y_hat) %>%
+      factor(levels = levels(re_seismic_test$class))
+    
+    confusionMatrix(predict_rf, re_seismic_test$class)
+    
   }
   )
-
-fit_rf[,1]$bestTune
-fit_rf[,2]$bestTune
-fit_rf[,3]$bestTune
-
-df_fit_rf <- data.frame(fit_rf)
-
-ggplot(fit_rf[,2])
-ggplot(fit_rf[,3])
-
-predict_rf <- 
-  re_seismic_test %>%
-  mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
-  pull(y_hat) %>%
-  factor(levels = levels(re_seismic_test$class))
-cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class)
-cm_rf$overall["Accuracy"]
-
 
 
 
 
 #importance
-imp<- varImp(fit_rf)
-tibble(term = rownames(imp), 
-       importance = imp$Overall)
+#imp<- varImp(fit_rf)
+#tibble(term = rownames(imp), 
+#       importance = imp$Overall)
 
 
 
