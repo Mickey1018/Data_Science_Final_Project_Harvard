@@ -5,8 +5,8 @@ date: "8/19/2020"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+```{r setup, set.seed(1), include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
 ```
 
 
@@ -535,7 +535,7 @@ kable(data.frame(pairs=c("energy~maxenergy","gdenergy~gdpuls","genergy~gpuls"),
 
 As mentioned in section 1.3, imbalance of class variables is a great problem in the data set. Among `r nrow(seismic)` observations, only `r sum(seismic$class==1)` of them belongs to class 1. Therefore if every time we just keep guessing the zero (the negative class), the result would be quite accurate or even perform better than other machine learning methods. Section 2.3.2 and 2.3.3 will demonstrate that problem.
 
-### 2.3.2 Model - Logistic Regression (imbalance class)
+### 2.3.2 Model - Logistic Regression (with imbalance class)
 
 Here we would try to use logistic regression for this classification problem. First a logistic regression model is trained with the whole data set. Then the model is used to predict the probability of positive class and negative class that an observation belongs to. After that, the predicted probability is compared with the actual probability to decide whether an observation should be classified as positive class or negative class. Finally by comparing the predicted class with actual class, accuracy of the model is calculated. We can obtain an accuracy of 0.735 for logistic regression model.
 
@@ -547,7 +547,7 @@ mean(class_glm == corrected_seismic$class)
 ```
 
 
-### 2.3.3 Model - Zero (imbalance class)
+### 2.3.3 Model - All Zero (with imbalance class)
 
 Second we would try a simple method be just guessing output class as zero every time. The accuracy of 0.935 is obtained with this model.
 
@@ -584,7 +584,7 @@ sum(re_seismic$class==1)
 sum(re_seismic$class==0)
 ```
 
-### 2.3.5 Model - Zero (Balance class)
+### 2.3.5 Model - All Zero
 
 After resampling our data set with same number of positive and negative class, an accuracy of 0.5 would be resulted by using the model that always predict zero.
 
@@ -604,13 +604,140 @@ re_seismic_train <- re_seismic %>% slice(-test_index)
 re_seismic_test <- re_seismic %>% slice(test_index)
 ```
 
-We have now `r nrow(re_seismic_train)` training data and `r nrow(re_seismic_test)` test data. In the following sections, we would try different training methods and see which perform the best.
+We have now `r nrow(re_seismic_train)` training data and `r nrow(re_seismic_test)` test data. In the following sections, we would try different training methods and see evaluate their performance.
 
-During the training process, Repeated k-fold Cross Validation will be used. This is the repeating process of splitting the data into k-folds, and the final model accuracy is calculated as the mean from the numbers of repeats. For the following traiing, 10-fold cross validation with 3 repeats will be used for our data set.
+During the training process, Repeated k-fold Cross Validation will be used in order to tune the hyper-parameters to best values. This is the repeated process of splitting the data into k-folds, and the final model accuracy is calculated as the mean from the numbers of repeats which should be more objective. For the following training, 10-fold cross validation with 3 repeats will be used for our data set.
 
-### 2.3.7 Model - knn
+### 2.3.7 Model - KNN
 
-### 2.3.8 Model - 
+Here, K nearest neighbors model is used for training. The numbers of neighbors are set to be 3 to 10.
+
+```{r, echo=TRUE}
+set.seed(1)
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_knn <- train(class~., 
+                 data = re_seismic_train, 
+                 trControl = train_control,
+                 method = "knn",
+                 tuneGrid = data.frame(k = seq(3, 10, 1))) 
+```
+
+Below is the graph showing the accuracy in repeated cross-validation test with different numbers of neighbors. 
+
+```{r, echo=TRUE}
+ggplot(fit_knn)
+```
+
+And the best number of neighbors is `r fit_knn$bestTune` for this model.
+
+``` {r,echo=TRUE}
+fit_knn$bestTune
+```
+
+Now in test set, we use the trained model to predict the output and compare with the actual output. The accuracy is then evaluated.
+
+```{r, echo=TRUE}
+predict_knn <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_knn, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+cm_knn <- confusionMatrix(predict_knn, re_seismic_test$class)
+cm_knn$overall["Accuracy"]
+```
+
+The accuracy of knn model is `r cm_knn$overall["Accuracy"]`.
+
+
+### 2.3.8 Model - Logistic Regression
+
+This time we use logistic regression for training our binary classification model. 
+
+```{r, echo=TRUE}
+set.seed(1)
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_glm_2 <- train(class ~ ., 
+                method = "glm", 
+                data = re_seismic_train,
+                trControl = train_control,
+                family = "binomial")
+```
+
+The trained model is then used to predict the output in test set. After comparing the actual result in test set, accuracy is calculated.
+
+```{r}
+predict_glm_2 <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_glm_2, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+cm_glm_2 <- confusionMatrix(predict_glm_2, re_seismic_test$class)
+cm_glm_2$overall["Accuracy"]
+```
+
+The accuracy of logistic regression model is `r cm_glm_2$overall["Accuracy"]`.
+
+### 2.3.9 Model - Decision Tree
+
+A well known machine learning method Decision tree is used in this section for training. A complexity parameter 'cp' from range 0 to 0.1 is used for fine tune in repeated cross-validation test.
+
+```{r, echo=TRUE}
+set.seed(1)
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_rpart <- train(class~., 
+                   data = re_seismic_train, 
+                   trControl = train_control,
+                   tuneGrid = data.frame(cp = seq(0, 0.1, 0.005)),
+                   method = "rpart")
+```
+
+The below graph shows the relationship between complexity parameter and accuracy in repeated cross-validation test.
+
+```{r, echo = TRUE}
+ggplot(fit_rpart)
+```
+
+The best value for complexity parameter is `r fit_rpart$bestTune`.
+
+```{r, echo = TRUE}
+fit_rpart$bestTune
+```
+
+The trained model is then used to predict the output in test set. Accuracy is then calculated by comparing the result with actual output. 
+
+```{r, echo = TRUE}
+predict_rpart <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_rpart, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+cm_rpart <- confusionMatrix(predict_rpart, re_seismic_test$class)
+cm_rpart$overall["Accuracy"]
+```
+
+The accuracy of decision tree model is `r cm_rpart$overall["Accuracy"]`.
+
+### 2.3.10 Model - Random Forest
+
+The final machine training method used for training is Random Forest. The mtry parameter, which is the number of variables available for splitting at each tree node, from range 1 ro 7 is used in repeated cross-validation for fine tuning the best model. 
+
+Also, the number of trees in forest would be set differently (100, 250 and 500) to  examine the effect on accuracy in test set.
+
+```{r, echo = TRUE}
+set.seed(1)
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+fit_rf <- 
+  sapply( c(100,250,500), function(x) {
+    train(class~., 
+    data = re_seismic_train, 
+    method = "rf",
+    tuneGrid = data.frame(mtry = seq(1:7)), 
+    trControl = train_control,
+    ntree = x)
+}
+)
+```
+
 
 
 
@@ -618,6 +745,7 @@ During the training process, Repeated k-fold Cross Validation will be used. This
 ***
 # 3. Results and Discussion
 
+knn - not consistant
 
 ***
 # 4. Conclusion and Future Work
