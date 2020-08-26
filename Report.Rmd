@@ -719,9 +719,7 @@ The accuracy of decision tree model is `r cm_rpart$overall["Accuracy"]`.
 
 ### 2.3.10 Model - Random Forest
 
-The final machine training method used for training is Random Forest. The mtry parameter, which is the number of variables available for splitting at each tree node, from range 1 ro 7 is used in repeated cross-validation for fine tuning the best model. 
-
-Also, the number of trees in forest would be set differently (100, 250 and 500) to  examine the effect on accuracy in test set. 
+The final machine training method used for training is Random Forest. The mtry parameter, which is the number of variables available for splitting at each tree node, from range 1 ro 7 is used in repeated cross-validation for fine tuning the best model. Also, the number of trees in forest would be set differently (100, 250 and 500) to  examine the effect on accuracy in test set. 
 
 ```{r, echo = TRUE}
 set.seed(1)
@@ -747,6 +745,20 @@ cm_rf <-
     
   }
   )
+
+```
+
+After our model is trained and tested with test set, the below table summarize the accuracy of random forest model with different number of trees.
+
+```{r, echo = TRUE}
+acc_rf_100 <- cm_rf[,1]$overall["Accuracy"]
+acc_rf_250 <- cm_rf[,2]$overall["Accuracy"]
+acc_rf_500 <- cm_rf[,3]$overall["Accuracy"]
+
+df<- data.frame("number of trees" = c(100, 250, 500), 
+           Accuracy = c(acc_rf_100, acc_rf_250, acc_rf_500))
+
+kable(df, caption = "Accuracy of Random Forest Model v.s. number of trees")
 ```
 
 

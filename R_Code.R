@@ -524,8 +524,12 @@ cm_rf <-
   }
   )
 
+acc_rf_100 <- cm_rf[,1]$overall["Accuracy"]
+acc_rf_250 <- cm_rf[,2]$overall["Accuracy"]
+acc_rf_500 <- cm_rf[,3]$overall["Accuracy"]
 
-
+data.frame("number of trees" = c(100, 250, 500), 
+           Accuracy = c(acc_rf_100, acc_rf_250, acc_rf_500))
 
 #importance
 #imp<- varImp(fit_rf)
