@@ -13,6 +13,7 @@ if(!require(DMwR)) install.packages("DMwR", repos = "http://cran.us.r-project.or
 if(!require(randomForest)) install.packages("randomForest", repos = "http://cran.us.r-project.org")
 if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
 if(!require(pROC)) install.packages("pROC", repos = "http://cran.us.r-project.org")
+if(!require(ROCit)) install.packages("ROCit", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -29,6 +30,7 @@ library(DMwR)
 library(randomForest)
 library(rpart)
 library(pROC)
+library(ROCit) 
 
 #Read csv data set
 #change data set into data frame
@@ -501,10 +503,92 @@ cm_rf$overall["Accuracy"]
 
 
 
-#3.1 Evaluation
+#3.1 Overall Accuracy
+
+df_acc <- data.frame(Model = c("All Zero", 
+                             "KNN", 
+                             "Decision Tree", 
+                             "Random Forest"),
+                     Accuracy = c(0.5,
+                                  cm_knn$overall["Accuracy"],
+                                  cm_rpart$overall["Accuracy"],
+                                  cm_rf$overall["Accuracy"]))
+
+
+
+#3.2 ROC Curve
+#generate ROC curve for knn
+pROC_knn <- roc(re_seismic_test$class, as.numeric(predict_knn), 
+                  ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
+                  auc.polygon = TRUE, max.auc.polygon = TRUE, grid = TRUE,
+                  print.auc = TRUE, show.thres = TRUE)
+#confidence interval of ROC
+sens.ci_knn <- ci.se(pROC_knn)
+#plot the ROC curve
+plot(sens.ci_knn, type = "shape", col = "gold")
+plot(sens.ci_knn, type = "bars")
+
+pROC_knn$auc
+pROC_knn$specificities[2]
+
+
+
+#generate ROC curve for knn
+pROC_rpart <- roc(re_seismic_test$class, as.numeric(predict_rpart), 
+                  ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
+                  auc.polygon = TRUE, max.auc.polygon = TRUE, grid = TRUE,
+                  print.auc = TRUE, show.thres = TRUE)
+#confidence interval of ROC
+sens.ci_rpart <- ci.se(pROC_rpart)
+#plot the ROC curve
+plot(sens.ci_rpart, type = "shape", col = "gold")
+plot(sens.ci_rpart, type = "bars")
+
+pROC_rpart$auc
+pROC_rpart$specificities[2]
+
+
+
+#generate ROC curve for random forest
+pROC_rf <- roc(re_seismic_test$class, as.numeric(predict_rf), 
+                  ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
+                  auc.polygon = TRUE, max.auc.polygon = TRUE, grid = TRUE,
+                  print.auc = TRUE, show.thres = TRUE)
+#confidence interval of ROC
+sens.ci_rf <- ci.se(pROC_rf)
+#plot the ROC curve
+plot(sens.ci_rf, type = "shape", col = "gold")
+plot(sens.ci_rf, type = "bars")
+
+pROC_rf$auc
+pROC_rf$specificities[2]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ROCit - 2019
-library(ROCit) 
+
 #calculate threshold-bound metrics
 m_rpart <- measureit(score=as.numeric(predict_rpart),class=re_seismic_test$class,
                      measure = c("ACC", "SENS", "SPEC", "FSCR"))
@@ -512,23 +596,30 @@ mymetrics_rpart <- as.data.frame(cbind(Cutoff = m_rpart$Cutoff, Depth = m_rpart$
                                        Accuracy = m_rpart$ACC, Sensitivity = m_rpart$SENS,
                                        Specificity = m_rpart$SPEC, `F-Score` = m_rpart$FSCR))
 mymetrics_rpart
+
 #ROC curve
 ROC_rpart <- rocit(score=as.numeric(predict_rpart),class=re_seismic_test$class) 
-plot(ROC_rpart)
+#plot(ROC_rpart)
 summary(ROC_rpart)
+
 #confidence interval of ROC curve
 ci.roc_rpart <- ciROC(ROC_rpart, level = 0.9)
 plot(ci.roc_rpart)
+
 #confidence interval of AUC
 ci.auc_rpart <- ciAUC(ROC_rpart, level = 0.95)
 print(ci.auc_rpart)
 
 
+
+
+
+#generate ROC curve
 ROC_knn <- rocit(score=as.numeric(predict_knn),class=re_seismic_test$class)
-plot(ROC_knn)
-
-
-
+#calculate 90% confidence interval
+ci.roc_knn <- ciROC(ROC_knn, level = 0.9)
+plot(ci.roc_knn, main = "KNN",col.main = "red")
+summary(ROC_knn)
 
 
 
@@ -582,6 +673,7 @@ pROC_rpart <- roc(re_seismic_test$class, as.numeric(predict_rpart),
             print.auc = TRUE, show.thres = TRUE)
 
 sens.ci <- ci.se(pROC_rpart)
-plot(sens.ci, type = "shape", col = "lightblue")
+plot(sens.ci, type = "shape", col = "gold")
 plot(sens.ci, type = "bars")
-
+pROC_rpart$auc
+pROC_rpart$specificities[2]
