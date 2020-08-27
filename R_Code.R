@@ -12,6 +12,7 @@ if(!require(plyr)) install.packages("plyr", repos = "http://cran.us.r-project.or
 if(!require(DMwR)) install.packages("DMwR", repos = "http://cran.us.r-project.org")
 if(!require(randomForest)) install.packages("randomForest", repos = "http://cran.us.r-project.org")
 if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
+if(!require(pROC)) install.packages("pROC", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -27,6 +28,7 @@ library(plyr)
 library(DMwR)
 library(randomForest)
 library(rpart)
+library(pROC)
 
 #Read csv data set
 #change data set into data frame
@@ -392,21 +394,13 @@ corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)
 
 ## 2.3 Modeling Approach
 
-### 2.3.2 Model-Logistic Regression (Imbalance class)
-model_glm <- glm(class ~ ., data = corrected_seismic, family = "binomial")
-predict_glm <- predict(model_glm, type = "response")
-class_glm <- ifelse(predict_glm >= mean(corrected_seismic$class), 1, 0)
-mean(class_glm == corrected_seismic$class)#0.735
 
-
-
-### 2.3.3 Model- Zero (Imbalance class)
+### 2.3.2 Model- Zero (Imbalance class)
 model_zero <- 0
 mean(model_zero == corrected_seismic$class)#0.935
 
 
-
-### 2.3.4 Resampling 
+### 2.3.3 Resampling 
 corrected_seismic$class <- as.factor(corrected_seismic$class)
 corrected_seismic$seismic <- as.factor(corrected_seismic$seismic)
 corrected_seismic$seismoacoustic <- as.factor(corrected_seismic$seismoacoustic)
@@ -418,12 +412,12 @@ sum(re_seismic$class==1)#507
 sum(re_seismic$class==0)#507
 
 
-### 2.3.5 Model - Zero (Balance class)
+### 2.3.4 Model - Zero (Balance class)
 mean(model_zero == re_seismic$class)
 
 
 
-### 2.3.6 Creating Data Partition
+### 2.3.5 Creating Data Partition
 y <- re_seismic$class
 set.seed(1)
 test_index <- createDataPartition(y, times = 1, p = 0.2, list = FALSE)
@@ -432,7 +426,7 @@ re_seismic_test <- re_seismic %>% slice(test_index)
 
 
 
-### 2.3.7 Model - knn
+### 2.3.6 Model - knn
 set.seed(1)
 train_control <- trainControl(method="repeatedcv", number=10, repeats = 3)
 fit_knn <- train(class~., 
@@ -459,26 +453,7 @@ re_seismic_test %>%
 
 
 
-### 2.3.8 Model - Logistic Regression
-set.seed(1)
-train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
-fit_glm_2 <- train(class ~ ., 
-                method = "glm", 
-                data = re_seismic_train,
-                trControl = train_control,
-                family = "gaussian")
-predict_glm_2 <- 
-  re_seismic_test %>%
-  mutate(y_hat = predict(fit_glm_2, newdata = re_seismic_test)) %>%
-  pull(y_hat) %>%
-  factor(levels = levels(re_seismic_test$class))
-
-cm_glm_2 <- confusionMatrix(predict_glm_2, re_seismic_test$class)
-cm_glm_2$overall["Accuracy"]
-
-
-
-### 2.3.8 Model - Decision Tree
+### 2.3.7 Model - Decision Tree (ID3)
 set.seed(1)
 train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
 fit_rpart <- train(class~., 
@@ -499,42 +474,70 @@ cm_rpart$overall["Accuracy"]
 
 
 
-### 2.3.9 Model - Random Forest
+### 2.3.8 Model - Random Forest
 set.seed(1)
 train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
-cm_rf <- 
-  sapply( c(100,250,500), function(x) {
-    
-    fit_rf <- 
-      train(class~., 
-      data = re_seismic_train, 
-      method = "rf",
-      tuneGrid = data.frame(mtry = seq(1:7)), 
-      trControl = train_control,
-      ntree = x)
-    
-    predict_rf <- 
-      re_seismic_test %>%
-      mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
-      pull(y_hat) %>%
-      factor(levels = levels(re_seismic_test$class))
-    
-    confusionMatrix(predict_rf, re_seismic_test$class)
-    
-  }
-  )
 
-acc_rf_100 <- cm_rf[,1]$overall["Accuracy"]
-acc_rf_250 <- cm_rf[,2]$overall["Accuracy"]
-acc_rf_500 <- cm_rf[,3]$overall["Accuracy"]
+fit_rf <- 
+  train(class~., 
+        data = re_seismic_train, 
+        method = "rf",
+        tuneGrid = data.frame(mtry = seq(1:10)), 
+        trControl = train_control,
+        ntree = 500)
 
-data.frame("number of trees" = c(100, 250, 500), 
-           Accuracy = c(acc_rf_100, acc_rf_250, acc_rf_500))
+plot(fit_rf)
+
+fit_rf$bestTune
+
+predict_rf <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+
+cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class)
+cm_rf$overall["Accuracy"]
+
+
+
+#3.1 Evaluation
+
+#ROCit - 2019
+library(ROCit) 
+#calculate threshold-bound metrics
+m_rpart <- measureit(score=as.numeric(predict_rpart),class=re_seismic_test$class,
+                     measure = c("ACC", "SENS", "SPEC", "FSCR"))
+mymetrics_rpart <- as.data.frame(cbind(Cutoff = m_rpart$Cutoff, Depth = m_rpart$Depth,
+                                       Accuracy = m_rpart$ACC, Sensitivity = m_rpart$SENS,
+                                       Specificity = m_rpart$SPEC, `F-Score` = m_rpart$FSCR))
+mymetrics_rpart
+#ROC curve
+ROC_rpart <- rocit(score=as.numeric(predict_rpart),class=re_seismic_test$class) 
+plot(ROC_rpart)
+summary(ROC_rpart)
+#confidence interval of ROC curve
+ci.roc_rpart <- ciROC(ROC_rpart, level = 0.9)
+plot(ci.roc_rpart)
+#confidence interval of AUC
+ci.auc_rpart <- ciAUC(ROC_rpart, level = 0.95)
+print(ci.auc_rpart)
+
+
+ROC_knn <- rocit(score=as.numeric(predict_knn),class=re_seismic_test$class)
+plot(ROC_knn)
+
+
+
+
+
+
+
+
 
 #importance
-#imp<- varImp(fit_rf)
-#tibble(term = rownames(imp), 
-#       importance = imp$Overall)
+imp_rpart <- varImp(fit_rpart)
+imp_rpart$importance
 
 
 
@@ -550,9 +553,35 @@ data.frame("number of trees" = c(100, 250, 500),
 
 
 
+#precrec - 2015
+library(precrec) 
+precrec_rpart <- evalmod(scores = as.numeric(predict_rpart), labels = re_seismic_test$class)
+autoplot(precrec_rpart)
+
+precrec_rpart2 <- evalmod(scores = as.numeric(predict_rpart), labels = re_seismic_test$class, mode="basic")
+autoplot(precrec_rpart2)
+
+
+
+#PRROC - 2014
+library(PRROC)
+PROC_rpart <- roc.curve(scores.class0 = as.numeric(predict_rpart), 
+                        weights.class0 = as.numeric(re_seismic_test$class),
+                        curve = TRUE)
+
+plot(PROC_rpart)
 
 
 
 
+#pROC - 2010
+library(pROC)
+pROC_rpart <- roc(re_seismic_test$class, as.numeric(predict_rpart), 
+            ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
+            auc.polygon = TRUE, max.auc.polygon = TRUE, grid = TRUE,
+            print.auc = TRUE, show.thres = TRUE)
 
+sens.ci <- ci.se(pROC_rpart)
+plot(sens.ci, type = "shape", col = "lightblue")
+plot(sens.ci, type = "bars")
 

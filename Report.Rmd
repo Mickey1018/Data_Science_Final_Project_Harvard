@@ -25,6 +25,7 @@ if(!require(plyr)) install.packages("plyr", repos = "http://cran.us.r-project.or
 if(!require(DMwR)) install.packages("DMwR", repos = "http://cran.us.r-project.org")
 if(!require(randomForest)) install.packages("randomForest", repos = "http://cran.us.r-project.org")
 if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
+if(!require(pROC)) install.packages("pROC", repos = "http://cran.us.r-project.org")
 
 #import any necessary library
 library(tidyverse)
@@ -40,6 +41,7 @@ library(plyr)
 library(DMwR)
 library(randomForest)
 library(rpart)
+library(pROC)
 
 #Read csv data first, and then change them into data frame
 seismic <- as.data.frame(read_csv("data/seismic_bumps.csv"))
@@ -533,32 +535,22 @@ kable(data.frame(pairs=c("energy~maxenergy","gdenergy~gdpuls","genergy~gpuls"),
 
 ### 2.3.1 Potential problem in data set
 
-As mentioned in section 1.3, imbalance of class variables is a great problem in the data set. Among `r nrow(seismic)` observations, only `r sum(seismic$class==1)` of them belongs to class 1. Therefore if every time we just keep guessing the zero (the negative class), the result would be quite accurate or even perform better than other machine learning methods. Section 2.3.2 and 2.3.3 will demonstrate that problem.
+As mentioned in section 1.3, imbalance of class variables is a great problem in the data set. Among `r nrow(seismic)` observations, only `r sum(seismic$class==1)` of them belongs to class 1. Therefore if every time we just keep guessing the zero (the negative class), the result would be quite accurate or even perform better than other machine learning methods. Section 2.3.2 will demonstrate that problem.
 
-### 2.3.2 Model - Logistic Regression (with imbalance class)
+### 2.3.2 Model - All Zero (with imbalance class)
 
-Here we would try to use logistic regression for this classification problem. First a logistic regression model is trained with the whole data set. Then the model is used to predict the probability of positive class and negative class that an observation belongs to. After that, the predicted probability is compared with the actual probability to decide whether an observation should be classified as positive class or negative class. Finally by comparing the predicted class with actual class, accuracy of the model is calculated. We can obtain an accuracy of 0.735 for logistic regression model.
-
-```{r, echo=TRUE}
-model_glm <- glm(class ~ ., data = corrected_seismic, family = "binomial")
-predict_glm <- predict(model_glm, type = "response")
-class_glm <- ifelse(predict_glm >= mean(corrected_seismic$class), 1, 0)
-mean(class_glm == corrected_seismic$class)
-```
-
-
-### 2.3.3 Model - All Zero (with imbalance class)
-
-Second we would try a simple method be just guessing output class as zero every time. The accuracy of 0.935 is obtained with this model.
+In our first model we would try a naive and simple method by just guessing zero (the negative class) as the output every time. It is expected that most of time we will get the correct answer. The accuracy is calculated as follow.
 
 ```{r, echo=TRUE}
 model_zero <- 0
 mean(model_zero == corrected_seismic$class)
 ```
 
-### 2.3.4 A solution to imbalance number of class variables
+From the result, an accuracy of `r mean(model_zero == corrected_seismic$class)` is obtained. 
 
-There are many ways to deal with class imbalance problem such as collecting more data, changing the performance metric, resampling data set, generating synthetic samples, using different algorithms and penalizing models [3]. In this report, resampling would be used for creating new examples in the minority class and randomly selecting a number of cases from the majority class.
+### 2.3.3 A solution to imbalance number of class variables
+
+There are many ways to deal with class imbalance problem such as collecting more data, changing the performance metric, resampling data set, generating synthetic samples, using different algorithms and penalizing models [3]. In this report, resampling would be used for creating new examples in the minority class and randomly selecting a number of cases from the majority class with the help of Synthetic minority over-sampling technique. 
 
 ```{r, include=FALSE}
 corrected_seismic$class <- as.factor(corrected_seismic$class)
@@ -568,13 +560,13 @@ corrected_seismic$shift <- as.factor(corrected_seismic$shift)
 corrected_seismic$ghazard <- as.factor(corrected_seismic$ghazard)
 ```
 
-SMOTE (Synthetic minority over-sampling technique) Algorithm from DMwR package is used for resampling.
+Here the SMOTE (Synthetic minority over-sampling technique) Algorithm from DMwR package is used for resampling.
 
 ```{r, echo=TRUE}
 re_seismic <- SMOTE(class ~ ., corrected_seismic, perc.over = 200, k = 5, perc.under=150)
 ```
 
-After resampling we now have `r sum(re_seismic$class==1)` positive class and `r sum(re_seismic$class==0)` negative class. The data set now becomes balance.
+After resampling, we now have `r sum(re_seismic$class==1)` positive class and `r sum(re_seismic$class==0)` negative class. The data set now becomes balance and allows us to perform machine learning algorithm.
 
 ```{r, echo=TRUE}
 sum(re_seismic$class==1)
@@ -584,7 +576,7 @@ sum(re_seismic$class==1)
 sum(re_seismic$class==0)
 ```
 
-### 2.3.5 Model - All Zero
+### 2.3.4 Model - All Zero
 
 After resampling our data set with same number of positive and negative class, an accuracy of 0.5 would be resulted by using the model that always predict zero.
 
@@ -592,7 +584,7 @@ After resampling our data set with same number of positive and negative class, a
 mean(model_zero == re_seismic$class)
 ```
 
-### 2.3.6 Data Partition 
+### 2.3.5 Data Partition 
 
 In order to evaluate our model performance, it is required to split our data set into training set and test set. A partition of 80 percent of training data to 20 percent of test data would be chosen.
 
@@ -608,9 +600,11 @@ We have now `r nrow(re_seismic_train)` training data and `r nrow(re_seismic_test
 
 During the training process, Repeated k-fold Cross Validation will be used in order to tune the hyper-parameters to best values. This is the repeated process of splitting the data into k-folds, and the final model accuracy is calculated as the mean from the numbers of repeats which should be more objective. For the following training, 10-fold cross validation with 3 repeats will be used for our data set.
 
-### 2.3.7 Model - KNN
+### 2.3.6 Model - KNN
 
-Here, K nearest neighbors model is used for training. The numbers of neighbors are set to be 3 to 10.
+Here, k nearest neighbors is used to build our classification model. KNN classifier first computes the distance between a test data and all instances in the training data, after that k closest instances are selected and the result is voted by the most frequent label (or class). In a data set, observations within the same class should also be closer to each other in high-dimensional feature spaces. This characteristic is suitable for solving binary classification problem.
+
+As the number of nearest neighbors is a key factor to knn algorithm, it is set to be 3 to 10. With the repeated cross-validation test, the best k would be obtained.
 
 ```{r, echo=TRUE}
 set.seed(1)
@@ -646,40 +640,13 @@ cm_knn <- confusionMatrix(predict_knn, re_seismic_test$class)
 cm_knn$overall["Accuracy"]
 ```
 
-The accuracy of knn model is `r cm_knn$overall["Accuracy"]`.
+The overall accuracy of knn model is `r cm_knn$overall["Accuracy"]`.
 
+### 2.3.7 Model - Decision Tree (ID3)
 
-### 2.3.8 Model - Logistic Regression
+We will build model with Decision tree (ID3) algorithm in this section. Decision Tree split the data on the feature that results in the largest information gain. In the previous data exploration section, we can easily observe that some features like 'gpuls', 'genergy' and 'energy' have different distribution in positive class and negative class, which implies that they can provide useful information to learner to classify data set. 
 
-This time we use logistic regression for training our binary classification model. 
-
-```{r, echo=TRUE}
-set.seed(1)
-train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
-fit_glm_2 <- train(class ~ ., 
-                method = "glm", 
-                data = re_seismic_train,
-                trControl = train_control,
-                family = "binomial")
-```
-
-The trained model is then used to predict the output in test set. After comparing the actual result in test set, accuracy is calculated.
-
-```{r}
-predict_glm_2 <- 
-  re_seismic_test %>%
-  mutate(y_hat = predict(fit_glm_2, newdata = re_seismic_test)) %>%
-  pull(y_hat) %>%
-  factor(levels = levels(re_seismic_test$class))
-cm_glm_2 <- confusionMatrix(predict_glm_2, re_seismic_test$class)
-cm_glm_2$overall["Accuracy"]
-```
-
-The accuracy of logistic regression model is `r cm_glm_2$overall["Accuracy"]`.
-
-### 2.3.9 Model - Decision Tree
-
-A well known machine learning method Decision tree is used in this section for training. A complexity parameter 'cp' from range 0 to 0.1 is used for fine tune in repeated cross-validation test.
+For training, a complexity parameter 'cp' ranged from 0 to 0.1 is used in repeated cross-validation test for fine tune.
 
 ```{r, echo=TRUE}
 set.seed(1)
@@ -715,57 +682,84 @@ cm_rpart <- confusionMatrix(predict_rpart, re_seismic_test$class)
 cm_rpart$overall["Accuracy"]
 ```
 
-The accuracy of decision tree model is `r cm_rpart$overall["Accuracy"]`.
+The overall accuracy of decision tree model is `r cm_rpart$overall["Accuracy"]`.
 
-### 2.3.10 Model - Random Forest
+### 2.3.8 Model - Random Forest
 
-The final machine training method used for training is Random Forest. The mtry parameter, which is the number of variables available for splitting at each tree node, from range 1 ro 7 is used in repeated cross-validation for fine tuning the best model. Also, the number of trees in forest would be set differently (100, 250 and 500) to  examine the effect on accuracy in test set. 
+The final machine training method used for training is Random Forest (RF).  Comparing to decision knn and tree, RF is powerful because it is an ensemble model using Bagging (Boostrap + Aggregating) as the ensemble method and decision tree as the individual learner. RF use Boostrap sampling technique by randomly sampling training data with replacement, results in some data may appear several times. RF helps to create data randomness and feature randomness. Once the set of decision trees are trained, the output of the forest is obtained by the majority vote of the trees. 
+
+The mtry parameter, which is the number of variables available for splitting at each tree node, are ranged from 1 to 10 in repeated cross-validation test for fine tune.
 
 ```{r, echo = TRUE}
 set.seed(1)
 train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
-cm_rf <- 
-  sapply( c(100,250,500), function(x) {
-    
-    fit_rf <- 
-      train(class~., 
-      data = re_seismic_train, 
-      method = "rf",
-      tuneGrid = data.frame(mtry = seq(1:7)), 
-      trControl = train_control,
-      ntree = x)
-    
-    predict_rf <- 
-      re_seismic_test %>%
-      mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
-      pull(y_hat) %>%
-      factor(levels = levels(re_seismic_test$class))
-    
-    confusionMatrix(predict_rf, re_seismic_test$class)
-    
-  }
-  )
 
+fit_rf <- 
+  train(class~., 
+  data = re_seismic_train, 
+  method = "rf",
+  tuneGrid = data.frame(mtry = seq(1:10)), 
+  trControl = train_control,
+  ntree = 500)
 ```
 
-After our model is trained and tested with test set, the below table summarize the accuracy of random forest model with different number of trees.
+The below graph shows how the parameter mtry affects the accuracy of model in repeated cross-validation test.
 
 ```{r, echo = TRUE}
-acc_rf_100 <- cm_rf[,1]$overall["Accuracy"]
-acc_rf_250 <- cm_rf[,2]$overall["Accuracy"]
-acc_rf_500 <- cm_rf[,3]$overall["Accuracy"]
-
-df<- data.frame("number of trees" = c(100, 250, 500), 
-           Accuracy = c(acc_rf_100, acc_rf_250, acc_rf_500))
-
-kable(df, caption = "Accuracy of Random Forest Model v.s. number of trees")
+plot(fit_rf)
 ```
+
+The result shows that the best value of mtry is `r fit_rf$bestTune`.
+
+```{r, echo = TRUE}
+fit_rf$bestTune
+```
+
+After our ensemble model is trained with train set, it used to predict result in test set.
+
+```{r, echo = TRUE}
+predict_rf <- 
+  re_seismic_test %>%
+  mutate(y_hat = predict(fit_rf, newdata = re_seismic_test)) %>%
+  pull(y_hat) %>%
+  factor(levels = levels(re_seismic_test$class))
+    
+cm_rf <- confusionMatrix(predict_rf, re_seismic_test$class)
+cm_rf$overall["Accuracy"]
+```
+
+The overall accuracy of random forest model is `r cm_rf$overall["Accuracy"]`.
+
 
 
 ***
+
 # 3. Results and Discussion
 
-knn - not consistant
+## 3.1 Evaluation 
+
+```{r}
+
+```
+
+
+### 3.1.1 Accuracy
+
+Disadvantages of Classification with Decision Trees:
+Easy to overfit.
+Decision Boundary restricted to being parallel to attribute axes.
+Decision tree models are often biased toward splits on features having a large number of levels.
+Small changes in the training data can result in large changes to decision logic.
+Large trees can be difficult to interpret and the decisions they make may seem counter intuitive.
+
+
+### 3.1.2 ROC Curve
+
+ROC (Receiver Operating Characteristic) Curve
+
+## 3.2 Importance of attributes 
+
+
 
 ***
 # 4. Conclusion and Future Work
