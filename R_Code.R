@@ -517,6 +517,7 @@ df_acc <- data.frame(Model = c("All Zero",
 
 
 #3.2 ROC Curve
+
 #generate ROC curve for knn
 pROC_knn <- roc(re_seismic_test$class, as.numeric(predict_knn), 
                   ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
@@ -527,9 +528,9 @@ sens.ci_knn <- ci.se(pROC_knn)
 #plot the ROC curve
 plot(sens.ci_knn, type = "shape", col = "gold")
 plot(sens.ci_knn, type = "bars")
-
+#get sensitivity and auc
+pROC_knn$sensitivities[2]
 pROC_knn$auc
-pROC_knn$specificities[2]
 
 
 
@@ -543,9 +544,9 @@ sens.ci_rpart <- ci.se(pROC_rpart)
 #plot the ROC curve
 plot(sens.ci_rpart, type = "shape", col = "gold")
 plot(sens.ci_rpart, type = "bars")
-
+#get sensitivity and auc
 pROC_rpart$sensitivities[2]
-pROC_rpart$specificities[2]
+pROC_rpart$auc
 
 
 
@@ -559,121 +560,52 @@ sens.ci_rf <- ci.se(pROC_rf)
 #plot the ROC curve
 plot(sens.ci_rf, type = "shape", col = "gold")
 plot(sens.ci_rf, type = "bars")
-
+#get sensitivity and auc
+pROC_rf$sensitivities[2]
 pROC_rf$auc
-pROC_rf$specificities[2]
 
 
 
+#3.3 Importance
+#feature importance in knn
+imp_knn <- varImp(fit_knn)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ROCit - 2019
-
-#calculate threshold-bound metrics
-m_rpart <- measureit(score=as.numeric(predict_rpart),class=re_seismic_test$class,
-                     measure = c("ACC", "SENS", "SPEC", "FSCR"))
-mymetrics_rpart <- as.data.frame(cbind(Cutoff = m_rpart$Cutoff, Depth = m_rpart$Depth,
-                                       Accuracy = m_rpart$ACC, Sensitivity = m_rpart$SENS,
-                                       Specificity = m_rpart$SPEC, `F-Score` = m_rpart$FSCR))
-mymetrics_rpart
-
-#ROC curve
-ROC_rpart <- rocit(score=as.numeric(predict_rpart),class=re_seismic_test$class) 
-#plot(ROC_rpart)
-summary(ROC_rpart)
-
-#confidence interval of ROC curve
-ci.roc_rpart <- ciROC(ROC_rpart, level = 0.9)
-plot(ci.roc_rpart)
-
-#confidence interval of AUC
-ci.auc_rpart <- ciAUC(ROC_rpart, level = 0.95)
-print(ci.auc_rpart)
-
-
-
-
-
-#generate ROC curve
-ROC_knn <- rocit(score=as.numeric(predict_knn),class=re_seismic_test$class)
-#calculate 90% confidence interval
-ci.roc_knn <- ciROC(ROC_knn, level = 0.9)
-plot(ci.roc_knn, main = "KNN",col.main = "red")
-summary(ROC_knn)
-
-
-
-
-
-
-#importance
+#feature importance in decision tree
 imp_rpart <- varImp(fit_rpart)
-imp_rpart$importance
+
+#feature importance in random forest
+imp_rf <- varImp(fit_rf)
+
+#show features in knn model with importance > 50
+df_imp_knn <- 
+  data.frame(features = rownames(imp_knn$importance), 
+             knn_importance = imp_knn$importance[,1]) %>% 
+  filter(knn_importance>50)
+
+##show features in decision tree model with importance > 50
+df_imp_rpart <- 
+  data.frame(features = rownames(imp_rpart$importance), 
+             decision_tree_importance = imp_rpart$importance[,1]) %>% 
+  filter(decision_tree_importance>50)
+
+##show features in random forest model with importance > 50
+df_imp_rf <- 
+  data.frame(features = rownames(imp_rf$importance), 
+             random_forest_importance = imp_rf$importance[,1]) %>% 
+  filter(random_forest_importance>50)
+
+#full join the data frames
+important_feature <- full_join(df_imp_knn,full_join(df_imp_rpart,df_imp_rf))
+
+#Filter NA
+important_feature %>% 
+  filter(knn_importance != "NA") %>% 
+  filter(decision_tree_importance != "NA") %>%
+  filter(random_forest_importance != "NA")
+  
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-#precrec - 2015
-library(precrec) 
-precrec_rpart <- evalmod(scores = as.numeric(predict_rpart), labels = re_seismic_test$class)
-autoplot(precrec_rpart)
-
-precrec_rpart2 <- evalmod(scores = as.numeric(predict_rpart), labels = re_seismic_test$class, mode="basic")
-autoplot(precrec_rpart2)
-
-
-
-#PRROC - 2014
-library(PRROC)
-PROC_rpart <- roc.curve(scores.class0 = as.numeric(predict_rpart), 
-                        weights.class0 = as.numeric(re_seismic_test$class),
-                        curve = TRUE)
-
-plot(PROC_rpart)
-
-
-
-
-#pROC - 2010
-library(pROC)
-pROC_rpart <- roc(re_seismic_test$class, as.numeric(predict_rpart), 
-            ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
-            auc.polygon = TRUE, max.auc.polygon = TRUE, grid = TRUE,
-            print.auc = TRUE, show.thres = TRUE)
-
-sens.ci <- ci.se(pROC_rpart)
-plot(sens.ci, type = "shape", col = "gold")
-plot(sens.ci, type = "bars")
-pROC_rpart$auc
-pROC_rpart$specificities[2]

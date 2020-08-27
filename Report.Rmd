@@ -219,7 +219,7 @@ corrected_seismic<-
 
 In this section, the distribution of the result of shift seismic hazard assessment obtained by seismic method on mine with hazardous state and non-hazardous state is visualized. We can observe that the distribution of assessment result a (lack of hazard) and b (low hazard) is almost the same in mine with hazardous state. While the distribution of assessment result a (lack of hazard) is much higher than b (low hazard) in mine with non-hazardous state. The result is quite make sense since the mine with non-hazardous state should be more safe than that with  hazard state which is supported by the result of hazard assessment.
 
-```{r, echo=FALSE, figures-side, fig.show="hold", out.width="50%"}
+```{r, echo=FALSE, figures-side, fig.show="hold", out.width="50%", fig.cap="seismic distribution on positive class and negative class"}
 #extract the index of incorrect data set
 incorrect_index<- 
   seismic %>% 
@@ -259,7 +259,7 @@ corrected_seismic %>%
 
 Similar to the previous section, the distribution of the result of shift seismic hazard assessment on mine with hazardous state and non-hazardous state is visualized, but the assessment result is obtained by seismoacoustic method. This time we can observe that the distribution of assessment result a (lack of hazard), b (low hazard) and c (high hazard) are almost the same in mine with hazardous state and non-hazardous state. This is pretty much surprise because we can deduce from the result that possibly the seismic hazard assessment result do not affect whether the mine is to be classified as hazardous or non-hazardous. The main reason may cause by the method used for hazard assessment this time is different from the previous one.
 
-```{r, echo=FALSE, fig.show="hold", out.width="50%"}
+```{r, echo=FALSE, fig.show="hold", out.width="50%", fig.cap="seismoacoustic distribution on positive class and negative class"}
 corrected_seismic %>%
   filter(class==1) %>%
   ggplot(aes(seismoacoustic)) +
@@ -283,7 +283,7 @@ corrected_seismic %>%
 
 The effects of shift type (coal-getting or preparation) on seismic hazard of mine can be observed in the below graphs. Comparing to mine with non-hazardous state, it clearly shows that the ratio of W to N (i.e. the ratio of time period of coal-getting to preparation in mine) is much higher in mine with hazardous state. This comes to a reasonable observation because there is a possibility that coal-getting activity would trigger a high energy seismic bumps.
 
-```{r, echo=FALSE, fig.show="hold", out.width="50%"}
+```{r, echo=FALSE, fig.show="hold", out.width="50%", fig.cap="shift type distribution on positive class and negative class"}
 corrected_seismic %>%
   filter(class==1) %>%
   ggplot(aes(shift)) +
@@ -309,7 +309,7 @@ This presents the records of seismic energy registered by the most active geopho
 
 Another thing we observed from the findings is that the range is larger, and the quartile range is smaller in the negative class data set. The reason of this fluctuation may be due to the imbalance number of observations in positive class and negative class.
 
-```{r}
+```{r, fig.cap="genergy in positive class and negative class"}
 corrected_seismic %>% 
   mutate(genergy_tran = genergy+1) %>%
   ggplot(aes(genergy_tran)) +
@@ -329,7 +329,7 @@ In this section, the deviation of records of seismic energy registered by the mo
 
 The difference in range of data set may cause by the imbalance number of observations in positive class and negative class. 
 
-```{r}
+```{r, fig.cap="gdenergy in positive class and negative class"}
 corrected_seismic %>% 
   mutate(gdenergy_absolute = ifelse(gdenergy<0,-gdenergy,gdenergy)) %>%
   mutate(gdenergy_tran = ifelse(gdenergy_absolute==0,gdenergy_absolute+1,gdenergy_absolute)) %>%
@@ -347,7 +347,7 @@ corrected_seismic %>%
 
 The below graph shows the distribution of number of seismic pulses recorded in previous shift on the two classes (i.e. mine with hazardous and non-hazardous state). It is observed that the more the seismic pulses recorded in the previous shift, the higher chance the high energy seismic bump occurs in the next shift.From this observation, 'gpuls' seems a good attribute for classifying whether the mine is in hazardous state or non-hazardous state.
 
-```{r}
+```{r, fig.cap="gpuls distribution on positive class and negative class"}
 mu_gpuls <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(gpuls))
 corrected_seismic %>% 
   mutate(class = as.character(class)) %>%
@@ -366,7 +366,7 @@ corrected_seismic %>%
 
 Here we try to observe how deviation of number of seismic pulses recorded in the previous shift would affect the occurrence of high energy bumps in next shift. In the below graph, the distributions of deviation of number of pulses in the previous shift are seem to be similar in two classes. An increase or decrease in number of seismic pulses in the previous shift seems not providing enough information for predicting the occurrence of high energy seismic bump in the next shift.
 
-```{r}
+```{r, fig.cap="gdpuls distribution on positive class and negative class"}
 mu_gdpuls <- 
   ddply(corrected_seismic %>% 
         mutate(gdpuls_absolute = ifelse(gdpuls<0,-gdpuls,gdpuls)),
@@ -391,7 +391,7 @@ corrected_seismic %>%
 
 Similar to section 2.2.2, in each of the class (i.e. mine with hazardous and non-hazardous state), distribution of results of hazard assessment is summarized in the below graphs. With keeping the use of seismoacoustic method, only the observations coming from the most active geophone (GMax) are registered. The result is a bit unexpected because in negative class (mine with non-hazardous state), some hazard assessment with result c (high hazard) is recorded while there is no such assessment result recorded in positive class (mine with hazard state). This may due to again the imbalance number of opbservations in positive class and negative class. 
 
-```{r, echo=FALSE, fig.show="hold", out.width="50%"}
+```{r, echo=FALSE, fig.show="hold", out.width="50%", fig.cap="ghazard distribution on positive class and negative class"}
 corrected_seismic %>%
   filter(class==1) %>%
   ggplot(aes(ghazard)) +
@@ -428,7 +428,7 @@ bumps_c1<- data.frame(bumps_sum = c(362,168,168,25,1))
 ```
 
 
-```{r, echo=FALSE, fig.show="hold", out.width="50%"}
+```{r, echo=FALSE, fig.show="hold", out.width="50%", fig.cap="number of seismic bumps with different energy range on positive class and negative class"}
 ###plot the positive class and negative class result
 ggplot(bumps_c1, aes(x=c('total no. of bumps',
                          'no. of bumps in \nenergy range [10^2, 10^3)',
@@ -463,7 +463,7 @@ ggplot(bumps_c0, aes(x=c('total no. of bumps',
 
 The below graph presents the total energy of seismic bumps registered in previous shift in both classes. Although the mean values of total energy are close to each other, the mean in negative class is only caused and calculated by 30 percent of it's observations. At most time (about 70 percent of the observations), the total energy of seismic bumps recorded in previous shift is zero in non-hazardous mine. While in the mine with hazardous state, about 75 percent of time there is a seismic bump with high energy level (10^3 to 10^5 J) occur in the previous shift. It then comes to a very useful information for predicting the occurrence of high energy seismic bumps in next shift.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.cap="total energy of seismic bumps on positive class and negative class"}
 mu_energy <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(energy))
 corrected_seismic %>%
   mutate(class = as.character(class)) %>%
@@ -484,7 +484,7 @@ corrected_seismic %>%
 
 A very similar result is obtained when we observe the relationship between the Maximum energy of seismic bumps recorded in previous shift and the occurrence of high energy seismic bumps in next shift. It may due to the reason that the Maximum seismic energy recorded in previous shift takes almost the while part of the total seismic energy recorded in previous shift (i.e. maxenergy / total energy approximately equal to 1).
 
-```{r,echo=FALSE}
+```{r,echo=FALSE, fig.cap="maximum energy of seismic bumps on positive class and negative class"}
 mu_maxenergy <- ddply(corrected_seismic,"class", summarise, grp.mean=mean(maxenergy))
 corrected_seismic %>%
   mutate(class = as.character(class)) %>%
@@ -520,7 +520,7 @@ NumericVariables<- corrected_seismic %>%
   select(genergy,gpuls,gdenergy,gdpuls,energy,maxenergy)
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.cap = "correlation between variables"}
 corrplot.mixed(cor(NumericVariables), lower.col = "black", number.cex = .7)
 ```
 
@@ -620,7 +620,7 @@ fit_knn <- train(class~.,
 
 Below is the graph showing the accuracy in repeated cross-validation test with different numbers of neighbors. 
 
-```{r, echo=TRUE}
+```{r, echo=TRUE, fig.cap = "number of nearest neighbors v.s. accuracy in repeated cross-validation"}
 ggplot(fit_knn)
 ```
 
@@ -662,7 +662,7 @@ fit_rpart <- train(class~.,
 
 The below graph shows the relationship between complexity parameter and accuracy in repeated cross-validation test.
 
-```{r, echo = TRUE}
+```{r, echo = TRUE, fig.cap = "complexity parameter v.s. accuracy in repeated cross-validation"}
 ggplot(fit_rpart)
 ```
 
@@ -707,8 +707,8 @@ fit_rf <-
 
 The below graph shows how the parameter mtry affects the accuracy of model in repeated cross-validation test.
 
-```{r, echo = TRUE}
-plot(fit_rf)
+```{r, echo = TRUE, fig.cap = "mtry v.s. accuracy in repeated cross-validation"}
+ggplot(fit_rf)
 ```
 
 The result shows that the best value of mtry is `r fit_rf$bestTune`.
@@ -760,7 +760,7 @@ Among the three machine learning algorithm, knn perform the worst in overall acc
 
 ## 3.2 ROC Curve
 
-Although overall accuracy is good enough for evaluating the performance of model. In our case of predicting the occurrence of seismic bumps in next shift, the close to zero FALSE NEGATIVE RATE (FNR) is the most important. Because if we predict negative but it was positive with just one time, it would cause huge damages and death to lots of mine workers. Therefore, a model with low FNR (i.e. 1 - sensitivity) or a high sensitivity is preferred.
+Although overall accuracy is good enough for evaluating the performance of model. In our case of predicting the occurrence of high energy seismic bumps in next shift in a mine, the close to zero FALSE NEGATIVE RATE (FNR) is the most important. Because if we predict negative but it was positive with just one time, it would cause huge damages and death to lots of mine workers. Therefore, a model with low FNR (i.e. 1 - sensitivity) or a high sensitivity is preferred.
 
 Next we would compare the ROC (Receiver Operating Characteristic) curve between our three trained machine learning models. 
 
@@ -803,17 +803,72 @@ plot(sens.ci_rf, type = "shape", col = "gold")
 plot(sens.ci_rf, type = "bars")
 ```
 
-From the ROC curve, we can observe the random forest model has the largest AUC (area under curve) and also the greatest sensitivity or smallest FNR. Therefore random forest model should be chosen as the most appropriate model for this case. Below is the summary of sensitivity with the three machine learning models.
+From the ROC curve, we can observe the random forest model has the largest AUC (area under curve) and also the greatest sensitivity or smallest FNR. Therefore random forest model should be chosen as the most appropriate model for this case. Below is the summary of sensitivity and auc with the three machine learning models.
 
-```{r}
+```{r, echo = FALSE}
 kable(data.frame(Model = c("KNN", "Decision Tree", "Random Forest"),
                  Sensitivity = c(pROC_knn$sensitivities[2],
                                  pROC_rpart$sensitivities[2],
-                                 pROC_rf$sensitivities[2])))
+                                 pROC_rf$sensitivities[2]),
+                 AUC = c(pROC_knn$auc,
+                         pROC_rpart$auc,
+                         pROC_rf$auc)), caption = "Sensitivity and AUC in different models")
 ```
 
 
-## 3.3 Importance of features 
+## 3.3 Feature Importance
+
+We have already built a powerful machine learning model for predicting the occurrence of high energy seismic bumps in next shift in a mine with high accuracy and sensitivity. But I think it is interesting to know which features in the data set are important so that we can pay more attention and be more careful in collecting those measurements in the future. 
+
+In the following table summary, after the importance of each feature is calculated for each machine learning model, in order to show only the important features, those features with importance lower than 50 would be filter out. Only the features with importance higher than 50 would be remain.
+
+```{r, echo = TRUE}
+#feature importance in knn
+imp_knn <- varImp(fit_knn)
+
+#feature importance in decision tree
+imp_rpart <- varImp(fit_rpart)
+
+#feature importance in random forest
+imp_rf <- varImp(fit_rf)
+
+#show features in knn model with importance > 50
+df_imp_knn <- 
+  data.frame(features = rownames(imp_knn$importance), 
+                         knn_importance = imp_knn$importance[,1]) %>% 
+  filter(knn_importance>50)
+
+##show features in decision tree model with importance > 50
+df_imp_rpart <- 
+  data.frame(features = rownames(imp_rpart$importance), 
+                           decision_tree_importance = imp_rpart$importance[,1]) %>% 
+  filter(decision_tree_importance>50)
+
+##show features in random forest model with importance > 50
+df_imp_rf <- 
+  data.frame(features = rownames(imp_rf$importance), 
+             random_forest_importance = imp_rf$importance[,1]) %>% 
+  filter(random_forest_importance>50)
+
+#full join the data frames
+important_feature <- full_join(df_imp_knn,full_join(df_imp_rpart,df_imp_rf))
+```
+
+```{r, echo = TRUE}
+kable(important_feature, caption = "Important feature in different models")
+```
+
+It is interesting to see that some features are quite important in some models are not important in other models (e.g. genergy and gpuls are important in knn and random forest, but are not important in decision tree). Conversely, some features are not important in some models are important in other model (e.g. gdenergy and gdpuls are not important in knn and decision tree, but are important in random forest). 
+
+In order to see the most important features in the data set, only the features that are important to the three models are kept.
+
+```{r, echo = TRUE}
+#Filter NA
+kable(important_feature %>% 
+  filter(knn_importance != "NA") %>% 
+  filter(decision_tree_importance != "NA") %>%
+  filter(random_forest_importance != "NA"), caption = "The most important features")
+```
 
 
 
