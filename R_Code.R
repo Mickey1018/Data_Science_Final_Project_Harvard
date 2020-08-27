@@ -544,7 +544,7 @@ sens.ci_rpart <- ci.se(pROC_rpart)
 plot(sens.ci_rpart, type = "shape", col = "gold")
 plot(sens.ci_rpart, type = "bars")
 
-pROC_rpart$auc
+pROC_rpart$sensitivities[2]
 pROC_rpart$specificities[2]
 
 

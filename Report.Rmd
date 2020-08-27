@@ -760,10 +760,11 @@ Among the three machine learning algorithm, knn perform the worst in overall acc
 
 ## 3.2 ROC Curve
 
-Next we would compare the ROC (Receiver Operating Characteristic) curve between the models. 
+Although overall accuracy is good enough for evaluating the performance of model. In our case of predicting the occurrence of seismic bumps in next shift, the close to zero FALSE NEGATIVE RATE (FNR) is the most important. Because if we predict negative but it was positive with just one time, it would cause huge damages and death to lots of mine workers. Therefore, a model with low FNR (i.e. 1 - sensitivity) or a high sensitivity is preferred.
 
+Next we would compare the ROC (Receiver Operating Characteristic) curve between our three trained machine learning models. 
 
-```{r, echo = TRUE, warning=FALSE}
+```{r, echo = TRUE, warning=FALSE, fig.cap = "ROC Curve for KNN"}
 #generate ROC curve for knn
 pROC_knn <- roc(re_seismic_test$class, as.numeric(predict_knn), 
                   ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
@@ -776,8 +777,8 @@ plot(sens.ci_knn, type = "shape", col = "gold")
 plot(sens.ci_knn, type = "bars")
 ```
 
-```{r, echo = TRUE, warning=FALSE}
-#generate ROC curve for knn
+```{r, echo = TRUE, warning=FALSE, fig.cap = "ROC Curve for Decision Tree"}
+#generate ROC curve for decision tree
 pROC_rpart <- roc(re_seismic_test$class, as.numeric(predict_rpart), 
                   ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
                   auc.polygon = TRUE, max.auc.polygon = TRUE, grid = TRUE,
@@ -789,7 +790,7 @@ plot(sens.ci_rpart, type = "shape", col = "gold")
 plot(sens.ci_rpart, type = "bars")
 ```
 
-```{r}
+```{r, echo = TRUE, warning = FALSE, fig.cap = "ROC Curve for Random Forest"}
 #generate ROC curve for random forest
 pROC_rf <- roc(re_seismic_test$class, as.numeric(predict_rf), 
                   ci = TRUE, ci.alpha = 0.9, stratifies = FALSE, plot = TRUE, 
@@ -801,6 +802,16 @@ sens.ci_rf <- ci.se(pROC_rf)
 plot(sens.ci_rf, type = "shape", col = "gold")
 plot(sens.ci_rf, type = "bars")
 ```
+
+From the ROC curve, we can observe the random forest model has the largest AUC (area under curve) and also the greatest sensitivity or smallest FNR. Therefore random forest model should be chosen as the most appropriate model for this case. Below is the summary of sensitivity with the three machine learning models.
+
+```{r}
+kable(data.frame(Model = c("KNN", "Decision Tree", "Random Forest"),
+                 Sensitivity = c(pROC_knn$sensitivities[2],
+                                 pROC_rpart$sensitivities[2],
+                                 pROC_rf$sensitivities[2])))
+```
+
 
 ## 3.3 Importance of features 
 
