@@ -1,8 +1,12 @@
 ---
-title: "Report on my own edx project"
+title: "Prediction on Seismic Hazard in Mining Work with Machine Learning Methods"
 author: "FUNG CHE HEI"
-date: "8/19/2020"
-output: pdf_document
+date: "8/28/2020"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+
 ---
 
 ```{r setup, set.seed(1), include=FALSE}
@@ -75,7 +79,7 @@ Here we read the downloaded data set and call it 'seismic'.
 seismic <- as.data.frame(read_csv("data/seismic_bumps.csv"))
 ```
 
-### An overview on the seismic-bumps Data Set
+* An overview on the seismic-bumps Data Set
 
 ```{r, echo=TRUE}
 nrow(seismic)
@@ -158,6 +162,8 @@ kable(data.frame(Variable = names,
 
 
 ## 1.6 Key Steps
+
+In the following sections, data cleaning and data exploration would be performed first to analysis the effect on output by different features. Then it will follow by building several classification models  by using different machine learning methods. Finally the models will be evaluated and compared.  
 
 ***
 
