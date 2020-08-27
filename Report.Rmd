@@ -752,7 +752,7 @@ df_acc <- data.frame(Model = c("All Zero", "KNN", "Decision Tree", "Random Fores
 kable(df_acc, caption = "Overall Accuracy in different Models")
 ```
 
-In this section we would compare the overall accuracy between the four models. From Table 4, we can observe that Random Forest (RF) is the most powerful classifier among the four models. Comparing with the second best model - Decision Tree, RF get an improvement in overall accuracy for about 10 percent! While the decision tree model just perform about 4% better than the knn model. 
+In this section we would compare the overall accuracy between the four models. From the above table, we can observe that Random Forest (RF) is the most powerful classifier and guessing zero every time is the weakest classifier among the four models. The decision tree model perform about 10% better than the knn model and the random forest model perform further 5% better than the decision tree model.
 
 RF is the most powerful because it is an ensemble model which build up with large amount of decision trees (individual classifier). As algorithm of decision tree is sensitive or highly depends on the information entropy in the data set, small changes in the training data could cause large changes to decision logic. Therefore with only one decision tree, the model would suffer from the bias of data set easily. However in RF, the boostrap sampling allows classifiers to see different data also with different attributes, such kind of randomness lower the bias effects produced in the data set and hence give a more accurate result. 
 
@@ -873,19 +873,20 @@ kable(important_feature %>%
 
 
 ***
-# 4. Conclusion and Future Work
+# 4. Conclusion
 
-## 4.1 Limitation
-More and more advanced seismic and seismoacoustic monitoring systems allow a better understanding rock mass processes and definition of seismic hazard prediction methods. 
-Accuracy of so far created methods is however far from perfect. 
-Complexity of seismic processes and big disproportion between the number of low-energy seismic events and the number 
-of high-energy phenomena (e.g. > 10^4J) causes the statistical techniques to be insufficient to predict 
-seismic hazard
-Therefore, it is essential to search for new opportunities of better hazard prediction, 
-also using machine learning methods.
-Unbalanced distribution of positive ('hazardous state') and negative 
-('non-hazardous state') examples is a serious problem in seismic hazard prediction. Currently used 
-methods are still insufficient to achieve good sensitivity and specificity of predictions.
+## 4.1 Summary of work
+
+* In short, this project works with 'seismic-bumps Data Set' from UCI Machine Learning Repository. Several models have been built and trained with machine learning algorithms to help predicting the occurrence of high energy seismic bumps in mine. The main challenge is the class imbalance problem within the data set and re-sampling technique is used as a solution by increasing the number in class of minority and decreasing the number in class of majority. Finally, both overall accuracy and ROC curve are used for evaluation of the models to ensure the low FNR (false negative rate) or high sensitivity. The final model that perform the best is built and trained by random forest, which has the accuracy of `r cm_rf$overall["Accuracy"]` and sensitivity of `r pROC_rf$sensitivities[2]`.
+
+
+## 4.2 Limitations and Future work
+
+* Unbalanced distribution of positive class ('mine with hazardous state') and negative class ('mine with non-hazardous state') within the data set increase the difficulty in predicting seismic hazard. In future, more simulation test could be carried out inside laboratory to generate more observations with the minority class. 
+
+* While analyzing data in section 2, we can see that there are unreasonable results made with seismic hazard assessment which would greatly affect our classification model. Development of more advanced seismic and seismoacoustic monitoring systems is suggested to collect more reliable results.
+
+* A big disproportion between the number of low energy and high energy seismic bumps causes the statistical techniques to be insufficient to predict seismic hazard. Researching for new approach of accessing seismic hazard prediction is need.
 
 ***
 
